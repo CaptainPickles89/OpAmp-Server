@@ -1,6 +1,10 @@
 """OpAMP HTTP handler — /v1/opamp POST endpoint."""
 from __future__ import annotations
 
+import asyncio
+import hashlib
+import time
+
 import structlog
 from fastapi import APIRouter, Request, Response
 from google.protobuf.message import DecodeError
@@ -16,15 +20,13 @@ from opamp_server.protocol import (
     detect_sequence_gap,
     parse_agent_uid,
 )
+from opamp_server.registry import AgentRecord, AgentRegistry
+from opamp_server import persistence
 
 PROTOBUF_CONTENT_TYPE = "application/x-protobuf"
 
 router = APIRouter()
 log = structlog.get_logger(__name__)
-
-# In-memory sequence tracker: uid_hex -> last_sequence_num
-# Replaced by full registry in 01-04-registry plan
-_sequence_store: dict[str, int] = {}
 
 
 @router.post("/v1/opamp")
@@ -66,11 +68,13 @@ async def opamp_handler(request: Request) -> Response:
         body_size=len(body),
     )
 
-    # Sequence gap detection
-    stored_seq = _sequence_store.get(uid_hex)
-    gap_detected = detect_sequence_gap(msg.sequence_num, stored_seq)
-    _sequence_store[uid_hex] = msg.sequence_num
+    # Registry lookup
+    registry: AgentRegistry = request.app.state.registry
+    existing = await registry.get(agent_uid)
 
+    # Sequence gap detection
+    stored_seq = existing.sequence_num if existing else None
+    gap_detected = detect_sequence_gap(msg.sequence_num, stored_seq)
     flags = FLAG_REPORT_FULL_STATE if gap_detected else 0
 
     if gap_detected:
@@ -79,6 +83,48 @@ async def opamp_handler(request: Request) -> Response:
             instance_uid=uid_hex,
             expected_seq=stored_seq + 1 if stored_seq is not None else None,
             received_seq=msg.sequence_num,
+        )
+
+    # Build updated registry record
+    now_ns = time.time_ns()
+    updated_record = AgentRecord(
+        instance_uid=agent_uid,
+        first_seen=existing.first_seen if existing else now_ns,
+        last_seen=now_ns,
+        capabilities=msg.capabilities,
+        sequence_num=msg.sequence_num,
+        description=None,  # populated from msg.agent_description if needed
+    )
+
+    # Update in-memory registry (synchronous within event loop)
+    await registry.upsert(updated_record)
+
+    # Fire-and-forget persistence (non-blocking)
+    asyncio.ensure_future(persistence.upsert_agent(updated_record))
+
+    # Store health snapshot if present
+    if msg.HasField("health"):
+        health = msg.health
+        asyncio.ensure_future(
+            persistence.store_health_snapshot(
+                instance_uid=agent_uid,
+                healthy=health.healthy,
+                status=health.status or None,
+                last_error=health.last_error or None,
+                details=None,  # simplified for Phase 1
+            )
+        )
+
+    # Store effective config if present
+    if msg.HasField("effective_config"):
+        cfg_bytes = msg.effective_config.SerializeToString()
+        cfg_hash = hashlib.sha256(cfg_bytes).hexdigest()[:16]
+        asyncio.ensure_future(
+            persistence.store_effective_config(
+                instance_uid=agent_uid,
+                config_hash=cfg_hash,
+                config_data={},  # simplified — store hash only for Phase 1
+            )
         )
 
     response_body = build_success_response(agent_uid=agent_uid, flags=flags)
