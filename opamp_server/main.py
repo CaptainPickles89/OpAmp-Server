@@ -10,7 +10,7 @@ from opamp_server.handler import router
 from opamp_server.limiter import limiter
 from opamp_server.logging_config import configure_logging
 from opamp_server.middleware import MaxBodySizeMiddleware
-from opamp_server.persistence import init_db, load_all_agents
+from opamp_server.persistence import init_db, load_all_agents, load_all_push_states
 from opamp_server.protocol import ERROR_TYPE_UNAVAILABLE, build_error_response
 from opamp_server.registry import AgentRegistry
 
@@ -71,6 +71,24 @@ def create_app() -> FastAPI:
         await init_db()
         records = await load_all_agents()
         await registry.hydrate(records)
+
+        # Hydrate push states for in-flight pushes (survive server restarts)
+        push_states = await load_all_push_states()
+        for ps in push_states:
+            uid_bytes = bytes.fromhex(ps["instance_uid"])
+            config_hash_bytes = bytes.fromhex(ps["config_hash"])
+            await registry.set_push_state(
+                uid=uid_bytes,
+                push_state=ps["push_state"],          # always "PUSH_PENDING" from hydration
+                pending_config_hash=config_hash_bytes,
+                pending_config_body=ps["config_body"],
+                is_rollback_push=ps.get("is_rollback", False),
+            )
+        log.info(
+            "push_states_restored",
+            count=len(push_states),
+        )
+
         agent_count = await registry.count()
         log.info(
             "opamp_server_started",
