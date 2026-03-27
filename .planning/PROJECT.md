@@ -16,32 +16,36 @@ Operators can see which collectors are connected, understand their health, and s
 - ✓ Protobuf message decoding/encoding via generated `opamp_pb2` / `anyvalue_pb2` stubs — existing
 - ✓ Docker container for the OpAmp server — existing
 - ✓ Docker container for example OTel Contrib Collector pre-configured to connect to the server — existing
+- ✓ Agent registry: track connected collectors by `instance_uid` with `sequence_num` tracking — Validated in Phase 1 (REGST-01)
+- ✓ Capability negotiation: capabilities=0x05 (AcceptsStatus | AcceptsEffectiveConfig) on every response — Validated in Phase 1 (PROTO-03)
+- ✓ Health report handling: store_health_snapshot with rolling retention — Validated in Phase 1 (REGST-04)
+- ✓ Effective config storage: store_effective_config with rolling retention — Validated in Phase 1 (REGST-05)
+- ✓ Proper binary ServerErrorResponse on all error paths — Validated in Phase 1 (PROTO-04)
+- ✓ Server instance_uid: UUID v7 via uuid6 — Validated in Phase 1 (PROTO-01)
+- ✓ SQLite persistence with WAL mode: aiosqlite, init_db, startup hydration — Validated in Phase 1 (REGST-02, REGST-03)
+- ✓ Structured JSON logging via structlog — Validated in Phase 1 (OPS-04)
+- ✓ Request size limiting via MaxBodySizeMiddleware — Validated in Phase 1 (PROTO-05)
+- ✓ Rate limiting via slowapi with binary error response — Validated in Phase 1 (PROTO-06)
+- ✓ Pinned deps, pylance removed, requirements.in source of truth — Validated in Phase 1 (OPS-01)
+- ✓ make proto regeneration via Makefile + grpc_tools.protoc — Validated in Phase 1 (OPS-02)
+- ✓ Configurable bind address via OPAMP_HOST env var — Validated in Phase 1 (OPS-03)
+- ✓ Pinned collector Dockerfile (0.119.0) — Validated in Phase 1 (OPS-06)
+- ✓ Sequence gap detection: detect_sequence_gap + ReportFullState flag — Validated in Phase 1 (PROTO-02)
+- ✓ PROTO-00 skeleton defects documented and fixed — Validated in Phase 1
+- ✓ Remote config push: push a new config to a collector via `ServerToAgent.remote_config` — Validated in Phase 2 (CFGMG-01, CFGMG-02)
+- ✓ Config push rollback: detect failure via `RemoteConfigStatus` and revert to previous config — Validated in Phase 2 (CFGMG-04)
+- ✓ Push state machine: IDLE/PUSH_PENDING/APPLYING/APPLIED/FAILED transitions — Validated in Phase 2 (CFGMG-03)
+- ✓ Double-push rejection: 409 Conflict when push already in progress — Validated in Phase 2 (CFGMG-05)
+- ✓ POST /api/v1/collectors/{id}/config REST endpoint — Validated in Phase 2 (CFGMG-01)
+- ✓ config_pushes SQLite table with rollback query support — Validated in Phase 2
+- ✓ Rollback anti-loop guard: prevents infinite rollback cycles — Validated in Phase 2
+- ✓ Push state hydration on server restart (APPLYING coerced to PUSH_PENDING) — Validated in Phase 2
 
 ### Active
-
-**Server — Protocol:**
-- [ ] Agent registry: track connected collectors by `instance_uid` with session state and `sequence_num` validation
-- [ ] Capability negotiation: parse incoming `capabilities` bitmask and respond with server capabilities
-- [ ] Health report handling: receive, parse, and store `ComponentHealth` from each agent
-- [ ] Effective config storage: receive and persist the current config reported by each agent
-- [ ] Remote config push: push a new config to a collector via `ServerToAgent.remote_config`
-- [ ] Config push rollback: detect failure via `RemoteConfigStatus` and revert to previous config
-- [ ] Proper `ServerToAgent` error responses using protobuf `ServerErrorResponse` (not JSON)
-- [ ] Server `instance_uid`: generate a proper UUID v7 at startup (not hardcoded `b"server-1234"`)
 
 **Server — API:**
 - [ ] `GET /api/v1/collectors` — JSON list of all connected collectors with health and metadata
 - [ ] `GET /api/v1/collectors/{id}` — JSON detail for a single collector (health, config, history)
-- [ ] `POST /api/v1/collectors/{id}/config` — push a new config to a collector
-
-**Server — Infrastructure:**
-- [ ] SQLite persistence: agent state and config history survive server restarts
-- [ ] Structured JSON logging (replace raw protobuf log lines)
-- [ ] Request size limiting (prevent memory exhaustion from oversized payloads)
-- [ ] Rate limiting middleware
-- [ ] Pin all Python dependencies with a lockfile; remove `pylance` from `requirements.txt`
-- [ ] Protobuf codegen tooling: `Makefile` target or `generate.sh` to regenerate `*_pb2.py` from `.proto`
-- [ ] Configurable bind address via environment variable (default `0.0.0.0` for container, `127.0.0.1` for dev)
 
 **UI:**
 - [ ] Collector list view: all connected collectors with health status indicators and last-seen time
@@ -116,4 +120,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after initialization*
+*Last updated: 2026-03-27 after Phase 2 completion — Config Push and Rollback complete*
