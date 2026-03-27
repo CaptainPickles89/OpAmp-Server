@@ -251,3 +251,45 @@ def mock_persistence():
 def mock_persistence_with_confirmed_config():
     """Stub for persistence with a confirmed config available for rollback."""
     return None  # test passes prev_config_override directly to process_remote_config_status
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 fixtures — health and config data helpers
+# ---------------------------------------------------------------------------
+
+@pytest_asyncio.fixture
+async def registered_agent_with_health(async_client, registered_agent_uid):
+    """Registered agent with one healthy health snapshot in SQLite.
+
+    Use this fixture when tests need health_status to be 'healthy'.
+    """
+    from opamp_server import persistence
+    await persistence.store_health_snapshot(
+        instance_uid=registered_agent_uid,
+        healthy=True,
+        status="All components healthy",
+        last_error=None,
+        details={"status": "All components healthy", "healthy": True},
+    )
+    return registered_agent_uid
+
+
+@pytest_asyncio.fixture
+async def registered_agent_with_config(async_client, registered_agent_uid):
+    """Registered agent with one effective_config snapshot in SQLite.
+
+    Use this fixture when tests need effective_config to be non-null.
+    """
+    from opamp_server import persistence
+    config_data = {
+        "collector.yaml": {
+            "body": "receivers:\n  otlp: {}\nexporters:\n  debug: {}\nservice:\n  pipelines:\n    traces:\n      receivers: [otlp]\n      exporters: [debug]\n",
+            "content_type": "text/yaml",
+        }
+    }
+    await persistence.store_effective_config(
+        instance_uid=registered_agent_uid,
+        config_hash="a1b2c3d4e5f60718293a4b5c6d7e8f90",
+        config_data=config_data,
+    )
+    return registered_agent_uid
