@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+protobuf
+uuid6
+aiosqlite
+slowapi
+structlog
+pydantic-settings
