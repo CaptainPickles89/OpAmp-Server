@@ -5,12 +5,14 @@ or parse protobuf messages. No I/O, no registry access.
 """
 from __future__ import annotations
 
+import hashlib
+
 import uuid6
 import opamp_pb2 as opamp
 
-# Server capabilities advertised to agents in Phase 1:
-# AcceptsStatus (0x01) | AcceptsEffectiveConfig (0x04)
-SERVER_CAPABILITIES: int = 0x05
+# Server capabilities advertised to agents — Phase 2 adds OffersRemoteConfig (0x02):
+# AcceptsStatus (0x01) | OffersRemoteConfig (0x02) | AcceptsEffectiveConfig (0x04) = 0x07
+SERVER_CAPABILITIES: int = 0x07
 
 # ServerToAgentFlags bit masks
 FLAG_REPORT_FULL_STATE: int = 0x01
@@ -18,6 +20,9 @@ FLAG_REPORT_FULL_STATE: int = 0x01
 # ServerErrorResponseType values (from opamp_pb2 enum)
 ERROR_TYPE_BAD_REQUEST: int = 1
 ERROR_TYPE_UNAVAILABLE: int = 2
+
+# AgentCapabilities bits (from opamp spec)
+CAPABILITY_ACCEPTS_REMOTE_CONFIG: int = 0x02
 
 
 def generate_server_uid() -> bytes:
@@ -29,9 +34,55 @@ def generate_server_uid() -> bytes:
     return uuid6.uuid7().bytes
 
 
+def compute_config_hash(config_body: str) -> bytes:
+    """Compute SHA-256 hash of config body as raw bytes.
+
+    The resulting bytes are stored in AgentRemoteConfig.config_hash.
+    The hex string (.hex()) is stored in SQLite.
+
+    Args:
+        config_body: Raw YAML string to hash.
+
+    Returns:
+        32-byte SHA-256 digest (raw bytes, not hex).
+    """
+    return hashlib.sha256(config_body.encode("utf-8")).digest()
+
+
+def build_remote_config(
+    config_body: str,
+    config_hash: bytes,
+) -> "opamp.AgentRemoteConfig":
+    """Build an AgentRemoteConfig for a YAML config push.
+
+    Constructs the nested AgentConfigMap -> AgentConfigFile structure
+    required by the OpAMP spec, using "collector.yaml" as the canonical
+    map key for OTel Collector configs.
+
+    Args:
+        config_body: Raw YAML string to deliver to the agent.
+        config_hash: Pre-computed SHA-256 bytes (32 bytes) from compute_config_hash().
+
+    Returns:
+        AgentRemoteConfig ready to attach to ServerToAgent.remote_config.
+    """
+    cfg_file = opamp.AgentConfigFile()
+    cfg_file.body = config_body.encode("utf-8")
+    cfg_file.content_type = "text/yaml"
+
+    cfg_map = opamp.AgentConfigMap()
+    cfg_map.config_map["collector.yaml"].CopyFrom(cfg_file)
+
+    remote_cfg = opamp.AgentRemoteConfig()
+    remote_cfg.config.CopyFrom(cfg_map)
+    remote_cfg.config_hash = config_hash
+    return remote_cfg
+
+
 def build_success_response(
     agent_uid: bytes,
     flags: int = 0,
+    remote_config: "opamp.AgentRemoteConfig | None" = None,
 ) -> bytes:
     """Build a serialized ServerToAgent response for a successful request.
 
@@ -39,6 +90,8 @@ def build_success_response(
         agent_uid: The agent's instance_uid bytes from AgentToServer.instance_uid.
             MUST be echoed back exactly as received.
         flags: Bit flags (e.g., FLAG_REPORT_FULL_STATE = 0x01).
+        remote_config: Optional AgentRemoteConfig to include in response.
+            Pass None for normal responses without a pending config push.
 
     Returns:
         Serialized protobuf bytes ready to send as response body.
@@ -47,6 +100,8 @@ def build_success_response(
     resp.instance_uid = agent_uid
     resp.capabilities = SERVER_CAPABILITIES
     resp.flags = flags
+    if remote_config is not None:
+        resp.remote_config.CopyFrom(remote_config)
     return resp.SerializeToString()
 
 

@@ -16,6 +16,15 @@ class AgentRecord:
     capabilities: int            # AgentCapabilities bitmask
     sequence_num: int            # last received sequence number
     description: Optional[dict] = field(default=None)
+    # Phase 2: config push state machine
+    push_state: str = field(default="IDLE")
+    # IDLE | PUSH_PENDING | APPLYING | APPLIED | FAILED
+    pending_config_hash: Optional[bytes] = field(default=None)
+    # SHA-256 bytes of the pending config (raw 32 bytes)
+    pending_config_body: Optional[str] = field(default=None)
+    # Raw YAML string of the pending config
+    is_rollback_push: bool = field(default=False)
+    # True if the current pending push is a server-initiated rollback
 
 
 class AgentRegistry:
@@ -75,3 +84,41 @@ class AgentRegistry:
         """Return the number of registered agents."""
         async with self._lock:
             return len(self._agents)
+
+    async def set_push_state(
+        self,
+        uid: bytes,
+        push_state: str,
+        pending_config_hash: Optional[bytes] = None,
+        pending_config_body: Optional[str] = None,
+        is_rollback_push: bool = False,
+    ) -> None:
+        """Atomically update push state and pending config fields for an agent.
+
+        Creates a new AgentRecord with updated push fields (immutable update pattern).
+        Does nothing if agent is not found.
+
+        Args:
+            uid: Agent's raw 16-byte instance_uid.
+            push_state: New state string: IDLE / PUSH_PENDING / APPLYING / APPLIED / FAILED.
+            pending_config_hash: SHA-256 bytes of config being pushed; None to clear.
+            pending_config_body: YAML string of config being pushed; None to clear.
+            is_rollback_push: True if this push was triggered by server-initiated rollback.
+        """
+        async with self._lock:
+            existing = self._agents.get(uid)
+            if existing is None:
+                return
+            updated = AgentRecord(
+                instance_uid=existing.instance_uid,
+                first_seen=existing.first_seen,
+                last_seen=existing.last_seen,
+                capabilities=existing.capabilities,
+                sequence_num=existing.sequence_num,
+                description=existing.description,
+                push_state=push_state,
+                pending_config_hash=pending_config_hash,
+                pending_config_body=pending_config_body,
+                is_rollback_push=is_rollback_push,
+            )
+            self._agents[uid] = updated
