@@ -1,1 +1,6 @@
 venv
+
+# Local planning and tooling (not for version control)
+.planning/
+.claude/
+.gsd/
