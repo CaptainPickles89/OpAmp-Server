@@ -11,12 +11,15 @@ from google.protobuf.message import DecodeError
 
 import opamp_pb2 as opamp
 from opamp_server.config import settings
+from opamp_server.config_manager import process_remote_config_status
 from opamp_server.limiter import limiter
 from opamp_server.protocol import (
     FLAG_REPORT_FULL_STATE,
     ERROR_TYPE_BAD_REQUEST,
+    CAPABILITY_ACCEPTS_REMOTE_CONFIG,
     build_error_response,
     build_success_response,
+    build_remote_config,
     detect_sequence_gap,
     parse_agent_uid,
 )
@@ -85,7 +88,7 @@ async def opamp_handler(request: Request) -> Response:
             received_seq=msg.sequence_num,
         )
 
-    # Build updated registry record
+    # Build updated registry record — preserve push state fields from existing record
     now_ns = time.time_ns()
     updated_record = AgentRecord(
         instance_uid=agent_uid,
@@ -94,6 +97,11 @@ async def opamp_handler(request: Request) -> Response:
         capabilities=msg.capabilities,
         sequence_num=msg.sequence_num,
         description=None,  # populated from msg.agent_description if needed
+        # Preserve push state from existing record (do not reset on each poll)
+        push_state=existing.push_state if existing else "IDLE",
+        pending_config_hash=existing.pending_config_hash if existing else None,
+        pending_config_body=existing.pending_config_body if existing else None,
+        is_rollback_push=existing.is_rollback_push if existing else False,
     )
 
     # Update in-memory registry (synchronous within event loop)
@@ -127,12 +135,68 @@ async def opamp_handler(request: Request) -> Response:
             )
         )
 
-    response_body = build_success_response(agent_uid=agent_uid, flags=flags)
+    # Process RemoteConfigStatus from incoming message (CFGMG-03 / CFGMG-04)
+    if msg.HasField("remote_config_status") and msg.remote_config_status.status != 0:
+        # Determine if current push is a rollback (for anti-loop guard)
+        # is_rollback_push is tracked on the AgentRecord itself (set when rollback is queued)
+        current_record = await registry.get(agent_uid)
+        is_rollback = current_record.is_rollback_push if current_record else False
+        await process_remote_config_status(
+            agent_uid=agent_uid,
+            status=msg.remote_config_status,
+            registry=registry,
+            is_rollback_push=is_rollback,
+        )
+        # Re-fetch record after status processing (state may have changed)
+        existing = await registry.get(agent_uid)
+
+    # Check if we need to deliver a pending config (CFGMG-02)
+    remote_config_msg = None
+    current_record = existing  # may have been updated by status processing above
+    if (
+        current_record is not None
+        and current_record.push_state == "PUSH_PENDING"
+        and current_record.pending_config_body is not None
+        and current_record.pending_config_hash is not None
+        and (current_record.capabilities & CAPABILITY_ACCEPTS_REMOTE_CONFIG)
+    ):
+        remote_config_msg = build_remote_config(
+            config_body=current_record.pending_config_body,
+            config_hash=current_record.pending_config_hash,
+        )
+        # Transition PUSH_PENDING -> APPLYING (optimistic: we're about to deliver)
+        # Preserve is_rollback_push so anti-loop guard works when FAILED is received
+        await registry.set_push_state(
+            uid=agent_uid,
+            push_state="APPLYING",
+            pending_config_hash=current_record.pending_config_hash,
+            pending_config_body=current_record.pending_config_body,
+            is_rollback_push=current_record.is_rollback_push,
+        )
+        asyncio.ensure_future(
+            persistence.update_push_state(
+                instance_uid=agent_uid,
+                config_hash=current_record.pending_config_hash.hex(),
+                new_state="APPLYING",
+            )
+        )
+        log.info(
+            "config_delivering",
+            instance_uid=uid_hex,
+            config_hash=current_record.pending_config_hash.hex()[:16],
+        )
+
+    response_body = build_success_response(
+        agent_uid=agent_uid,
+        flags=flags,
+        remote_config=remote_config_msg,
+    )
 
     log.info(
         "opamp_response_sent",
         instance_uid=uid_hex,
         flags=flags,
+        has_remote_config=remote_config_msg is not None,
         response_size=len(response_body),
     )
 
