@@ -1,0 +1,57 @@
+# compose.yaml — OpAMP Server stack
+# Usage: docker compose up
+#
+# Services:
+#   api       — FastAPI OpAMP + REST server (port 8000, internal only)
+#   ui        — nginx serving React SPA + reverse proxy to api (port 80)
+#   collector — OTel Contrib example collector with OpAMP extension
+#
+# Access the UI at: http://localhost
+# Access the API directly at: http://localhost/api/v1/collectors
+
+services:
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      OPAMP_DB_PATH: /app/data/registry.db
+      OPAMP_HOST: 0.0.0.0
+      OPAMP_PORT: "8000"
+      OPAMP_LOG_LEVEL: INFO
+    volumes:
+      - opamp-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/collectors')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"  # Note: rootless containers cannot bind port 80 (privileged); use 8080 on this host
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  collector:
+    build:
+      context: ./collector
+      dockerfile: Dockerfile
+    volumes:
+      - ./collector/config.compose.yaml:/etc/otelcol-contrib/config.yaml:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  opamp-data:
+    driver: local
