@@ -445,3 +445,133 @@ async def load_all_push_states() -> list[dict]:
                 })
     log.info("push_states_hydrated", count=len(rows))
     return rows
+
+
+async def get_latest_health_statuses(instance_uids: list[str]) -> dict[str, dict]:
+    """Batch-fetch the most recent health snapshot per agent for the list endpoint.
+
+    Uses a single SQL query with GROUP BY to avoid N+1 queries.
+    Agents with no health snapshots are absent from the returned dict
+    (caller interprets absence as 'unknown' health status).
+
+    Args:
+        instance_uids: List of hex UID strings (32-char hex, no dashes).
+
+    Returns:
+        Dict mapping hex UID string -> {'healthy': bool, 'status': str|None, 'last_error': str|None}.
+        Empty dict if instance_uids is empty or no snapshots exist.
+    """
+    if not instance_uids:
+        return {}
+
+    db_path = Path(settings.db_path)
+    if not db_path.exists():
+        return {}
+
+    placeholders = ",".join("?" * len(instance_uids))
+    result: dict[str, dict] = {}
+
+    async with aiosqlite.connect(str(db_path)) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            f"""
+            SELECT h.instance_uid, h.healthy, h.status, h.last_error
+            FROM health_snapshots h
+            INNER JOIN (
+                SELECT instance_uid, MAX(recorded_at) AS latest
+                FROM health_snapshots
+                WHERE instance_uid IN ({placeholders})
+                GROUP BY instance_uid
+            ) sub ON h.instance_uid = sub.instance_uid
+                  AND h.recorded_at = sub.latest
+            """,
+            instance_uids,
+        ) as cursor:
+            async for row in cursor:
+                result[row["instance_uid"]] = {
+                    "healthy": bool(row["healthy"]),
+                    "status": row["status"],
+                    "last_error": row["last_error"],
+                }
+
+    return result
+
+
+async def get_health_history(instance_uid: bytes, limit: int = 10) -> list[dict]:
+    """Return the most recent N health snapshots for a single agent, newest first.
+
+    Args:
+        instance_uid: Agent's raw 16-byte instance_uid.
+        limit: Maximum number of snapshots to return (default 10).
+
+    Returns:
+        List of dicts with keys: 'recorded_at' (int ns), 'healthy' (bool),
+        'status' (str|None), 'last_error' (str|None).
+        Empty list if agent has no snapshots or DB does not exist.
+    """
+    db_path = Path(settings.db_path)
+    if not db_path.exists():
+        return []
+
+    uid_hex = instance_uid.hex()
+    rows: list[dict] = []
+
+    async with aiosqlite.connect(str(db_path)) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """
+            SELECT recorded_at, healthy, status, last_error
+            FROM health_snapshots
+            WHERE instance_uid = ?
+            ORDER BY recorded_at DESC
+            LIMIT ?
+            """,
+            (uid_hex, limit),
+        ) as cursor:
+            async for row in cursor:
+                rows.append({
+                    "recorded_at": row["recorded_at"],
+                    "healthy": bool(row["healthy"]),
+                    "status": row["status"],
+                    "last_error": row["last_error"],
+                })
+
+    return rows
+
+
+async def get_latest_effective_config(instance_uid: bytes) -> Optional[dict]:
+    """Return the most recent effective config snapshot for a single agent.
+
+    Args:
+        instance_uid: Agent's raw 16-byte instance_uid.
+
+    Returns:
+        Dict with keys: 'recorded_at' (int ns), 'config_hash' (str), 'config_json' (dict).
+        None if agent has no effective config records or DB does not exist.
+    """
+    db_path = Path(settings.db_path)
+    if not db_path.exists():
+        return None
+
+    uid_hex = instance_uid.hex()
+
+    async with aiosqlite.connect(str(db_path)) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """
+            SELECT recorded_at, config_hash, config_json
+            FROM effective_configs
+            WHERE instance_uid = ?
+            ORDER BY recorded_at DESC
+            LIMIT 1
+            """,
+            (uid_hex,),
+        ) as cursor:
+            row = await cursor.fetchone()
+            if row is None:
+                return None
+            return {
+                "recorded_at": row["recorded_at"],
+                "config_hash": row["config_hash"],
+                "config_json": json.loads(row["config_json"]),
+            }
