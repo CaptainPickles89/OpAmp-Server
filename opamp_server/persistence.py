@@ -13,8 +13,13 @@ from typing import Optional
 import aiosqlite
 import structlog
 
-from opamp_server.config import settings
+import opamp_server.config as _config
 from opamp_server.registry import AgentRecord
+
+
+def _settings():
+    """Return the current settings object, respecting any module reloads."""
+    return _config.settings
 
 log = structlog.get_logger(__name__)
 
@@ -88,7 +93,7 @@ async def init_db() -> None:
 
     Must be called once at server startup before any other persistence calls.
     """
-    db_path = Path(settings.db_path)
+    db_path = Path(_settings().db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     async with aiosqlite.connect(str(db_path)) as db:
@@ -112,7 +117,7 @@ async def load_all_agents() -> list[AgentRecord]:
     Returns:
         List of AgentRecord instances, one per row in agents table.
     """
-    db_path = Path(settings.db_path)
+    db_path = Path(_settings().db_path)
     if not db_path.exists():
         return []
 
@@ -148,7 +153,7 @@ async def upsert_agent(record: AgentRecord) -> None:
     """
     uid_hex = record.instance_uid.hex()
     now = time.time_ns()
-    async with aiosqlite.connect(settings.db_path) as db:
+    async with aiosqlite.connect(_settings().db_path) as db:
         await db.execute(
             """
             INSERT INTO agents (instance_uid, first_seen, last_seen, capabilities, sequence_num, description_json, updated_at)
@@ -182,7 +187,7 @@ async def store_health_snapshot(
 ) -> None:
     """Store a ComponentHealth snapshot and enforce retention limit.
 
-    Keeps only the most recent `settings.health_snapshot_retention` rows per agent.
+    Keeps only the most recent ``settings.health_snapshot_retention`` rows per agent.
 
     Args:
         instance_uid: Agent's 16-byte UID.
@@ -193,9 +198,9 @@ async def store_health_snapshot(
     """
     uid_hex = instance_uid.hex()
     now = time.time_ns()
-    retention = settings.health_snapshot_retention
+    retention = _settings().health_snapshot_retention
 
-    async with aiosqlite.connect(settings.db_path) as db:
+    async with aiosqlite.connect(_settings().db_path) as db:
         await db.execute(
             """
             INSERT INTO health_snapshots (instance_uid, recorded_at, healthy, status, last_error, details_json)
@@ -227,7 +232,7 @@ async def store_effective_config(
 ) -> None:
     """Store an effective config snapshot and enforce retention limit.
 
-    Keeps only the most recent `settings.effective_config_retention` rows per agent.
+    Keeps only the most recent ``settings.effective_config_retention`` rows per agent.
 
     Args:
         instance_uid: Agent's 16-byte UID.
@@ -236,9 +241,9 @@ async def store_effective_config(
     """
     uid_hex = instance_uid.hex()
     now = time.time_ns()
-    retention = settings.effective_config_retention
+    retention = _settings().effective_config_retention
 
-    async with aiosqlite.connect(settings.db_path) as db:
+    async with aiosqlite.connect(_settings().db_path) as db:
         await db.execute(
             """
             INSERT INTO effective_configs (instance_uid, recorded_at, config_hash, config_json)
@@ -280,7 +285,7 @@ async def store_config_push(
     """
     uid_hex = instance_uid.hex()
     now = time.time_ns()
-    async with aiosqlite.connect(settings.db_path) as db:
+    async with aiosqlite.connect(_settings().db_path) as db:
         cursor = await db.execute(
             """
             INSERT INTO config_pushes
@@ -312,7 +317,7 @@ async def update_push_state(
         error_message: Error detail from RemoteConfigStatus; set on FAILED.
     """
     uid_hex = instance_uid.hex()
-    async with aiosqlite.connect(settings.db_path) as db:
+    async with aiosqlite.connect(_settings().db_path) as db:
         await db.execute(
             """
             UPDATE config_pushes
@@ -391,7 +396,7 @@ async def get_previous_confirmed_config(instance_uid: bytes) -> Optional[dict]:
         or None if no confirmed config exists for this agent.
     """
     uid_hex = instance_uid.hex()
-    async with aiosqlite.connect(settings.db_path) as db:
+    async with aiosqlite.connect(_settings().db_path) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             """
@@ -419,7 +424,7 @@ async def load_all_push_states() -> list[dict]:
         List of dicts with keys: 'instance_uid' (hex str), 'config_hash' (hex str),
         'config_body' (YAML str), 'push_state' (str).
     """
-    db_path = Path(settings.db_path)
+    db_path = Path(_settings().db_path)
     if not db_path.exists():
         return []
 
@@ -464,7 +469,7 @@ async def get_latest_health_statuses(instance_uids: list[str]) -> dict[str, dict
     if not instance_uids:
         return {}
 
-    db_path = Path(settings.db_path)
+    db_path = Path(_settings().db_path)
     if not db_path.exists():
         return {}
 
@@ -509,7 +514,7 @@ async def get_health_history(instance_uid: bytes, limit: int = 10) -> list[dict]
         'status' (str|None), 'last_error' (str|None).
         Empty list if agent has no snapshots or DB does not exist.
     """
-    db_path = Path(settings.db_path)
+    db_path = Path(_settings().db_path)
     if not db_path.exists():
         return []
 
@@ -549,7 +554,7 @@ async def get_latest_effective_config(instance_uid: bytes) -> Optional[dict]:
         Dict with keys: 'recorded_at' (int ns), 'config_hash' (str), 'config_json' (dict).
         None if agent has no effective config records or DB does not exist.
     """
-    db_path = Path(settings.db_path)
+    db_path = Path(_settings().db_path)
     if not db_path.exists():
         return None
 
