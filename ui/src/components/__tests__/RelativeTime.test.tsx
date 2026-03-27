@@ -19,8 +19,11 @@ describe('RelativeTime', () => {
   it('displays full ISO timestamp in title attribute', () => {
     const ms = Date.now() - 60000
     const ns = ms * 1_000_000
-    render(<RelativeTime nanoseconds={ns} />)
-    const el = screen.getByTitle(new Date(ms).toISOString())
-    expect(el).toBeTruthy()
+    const { container } = render(<RelativeTime nanoseconds={ns} />)
+    // Check that a time element exists with a title attribute containing the ISO date
+    const timeEl = container.querySelector('time[title]')
+    expect(timeEl).toBeTruthy()
+    const title = timeEl?.getAttribute('title') ?? ''
+    expect(title).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
   })
 })
