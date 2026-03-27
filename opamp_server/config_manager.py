@@ -68,14 +68,12 @@ async def queue_config_push(
     config_hash_bytes = compute_config_hash(config_body)
     config_hash_hex = config_hash_bytes.hex()
 
-    # Persist to SQLite (fire-and-forget — don't block the response)
-    asyncio.ensure_future(
-        persistence.store_config_push(
-            instance_uid=agent_uid,
-            config_hash=config_hash_hex,
-            config_body=config_body,
-            is_rollback=False,
-        )
+    # Persist to SQLite — await to ensure rollback queries can find confirmed rows
+    await persistence.store_config_push(
+        instance_uid=agent_uid,
+        config_hash=config_hash_hex,
+        config_body=config_body,
+        is_rollback=False,
     )
 
     # Update in-memory state
@@ -148,14 +146,13 @@ async def process_remote_config_status(
 
     if incoming_status == opamp.RemoteConfigStatuses_APPLIED:  # 1
         # Transition: APPLYING -> APPLIED -> IDLE
+        # Persist synchronously so rollback queries can find this confirmed row later
+        await persistence.record_push_applied(agent_uid, config_hash_hex)
         await registry.set_push_state(
             uid=agent_uid,
             push_state="IDLE",
             pending_config_hash=None,
             pending_config_body=None,
-        )
-        asyncio.ensure_future(
-            persistence.record_push_applied(agent_uid, config_hash_hex)
         )
         log.info("config_applied", instance_uid=agent_uid.hex(), config_hash=config_hash_hex[:16])
 
@@ -202,13 +199,11 @@ async def process_remote_config_status(
             rollback_body = prev["config_body"]
 
             # Store rollback push row
-            asyncio.ensure_future(
-                persistence.store_config_push(
-                    instance_uid=agent_uid,
-                    config_hash=prev["config_hash"],
-                    config_body=rollback_body,
-                    is_rollback=True,
-                )
+            await persistence.store_config_push(
+                instance_uid=agent_uid,
+                config_hash=prev["config_hash"],
+                config_body=rollback_body,
+                is_rollback=True,
             )
 
             await registry.set_push_state(

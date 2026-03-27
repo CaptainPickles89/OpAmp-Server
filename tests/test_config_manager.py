@@ -106,19 +106,24 @@ async def test_queue_config_push_rejects_in_progress(
 @pytest.mark.asyncio
 async def test_process_status_applied_clears_pending(mock_registry_with_applying_push):
     """APPLIED status transitions push state to IDLE and clears pending fields."""
+    from unittest.mock import patch, AsyncMock
     from opamp_server.config_manager import process_remote_config_status
+    from tests.conftest import PHASE2_VALID_YAML
     agent_uid = b"\x01" * 16
-    config_hash = hashlib.sha256(VALID_YAML.encode()).digest()
+    # Must use the same YAML as mock_registry_with_applying_push fixture
+    config_hash = hashlib.sha256(PHASE2_VALID_YAML.encode()).digest()
 
     status = opamp.RemoteConfigStatus()
     status.last_remote_config_hash = config_hash
     status.status = opamp.RemoteConfigStatuses_APPLIED
 
-    await process_remote_config_status(
-        agent_uid=agent_uid,
-        status=status,
-        registry=mock_registry_with_applying_push,
-    )
+    # Patch persistence to avoid real DB calls in unit tests
+    with patch("opamp_server.config_manager.persistence.record_push_applied", new_callable=AsyncMock):
+        await process_remote_config_status(
+            agent_uid=agent_uid,
+            status=status,
+            registry=mock_registry_with_applying_push,
+        )
     record = await mock_registry_with_applying_push.get(agent_uid)
     assert record.push_state == "IDLE"
     assert record.pending_config_hash is None
@@ -129,21 +134,27 @@ async def test_process_status_failed_queues_rollback(
     mock_registry_with_applying_push, mock_persistence_with_confirmed_config
 ):
     """FAILED status queues rollback to previous confirmed config."""
+    from unittest.mock import patch, AsyncMock
     from opamp_server.config_manager import process_remote_config_status
+    from tests.conftest import PHASE2_VALID_YAML
     agent_uid = b"\x01" * 16
-    config_hash = hashlib.sha256(VALID_YAML.encode()).digest()
+    # Must use the same YAML as mock_registry_with_applying_push fixture
+    config_hash = hashlib.sha256(PHASE2_VALID_YAML.encode()).digest()
 
     status = opamp.RemoteConfigStatus()
     status.last_remote_config_hash = config_hash
     status.status = opamp.RemoteConfigStatuses_FAILED
     status.error_message = "pipeline validation failed"
 
-    await process_remote_config_status(
-        agent_uid=agent_uid,
-        status=status,
-        registry=mock_registry_with_applying_push,
-        prev_config_override={"config_hash": config_hash.hex(), "config_body": "receivers:\n  otlp: {}\n"},
-    )
+    # Patch persistence to avoid real DB calls; use prev_config_override for rollback target
+    with patch("opamp_server.config_manager.persistence.record_push_failed", new_callable=AsyncMock), \
+         patch("opamp_server.config_manager.persistence.store_config_push", new_callable=AsyncMock):
+        await process_remote_config_status(
+            agent_uid=agent_uid,
+            status=status,
+            registry=mock_registry_with_applying_push,
+            prev_config_override={"config_hash": config_hash.hex(), "config_body": "receivers:\n  otlp: {}\n"},
+        )
     record = await mock_registry_with_applying_push.get(agent_uid)
     assert record.push_state == "PUSH_PENDING"  # rollback queued
     assert record.pending_config_body is not None

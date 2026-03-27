@@ -5,6 +5,7 @@ import structlog
 from fastapi import FastAPI, Request, Response
 from slowapi.errors import RateLimitExceeded
 
+from opamp_server.api import api_router
 from opamp_server.config import settings
 from opamp_server.handler import router
 from opamp_server.limiter import limiter
@@ -65,6 +66,7 @@ def create_app() -> FastAPI:
     app.add_middleware(MaxBodySizeMiddleware, max_body_size=settings.max_body_size)
 
     app.include_router(router)
+    app.include_router(api_router)
 
     @app.on_event("startup")
     async def on_startup() -> None:

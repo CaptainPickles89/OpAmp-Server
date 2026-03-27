@@ -40,8 +40,12 @@ def agent_to_server_with_gap(valid_agent_uid: bytes) -> bytes:
 
 
 @pytest_asyncio.fixture
-async def app(monkeypatch, tmp_path):
-    """FastAPI test application instance with isolated SQLite database."""
+async def async_client(monkeypatch, tmp_path):
+    """Async HTTP client connected to the FastAPI test app.
+
+    Uses a temporary directory for SQLite to isolate each test.
+    Manually triggers app startup so init_db() runs before any request.
+    """
     monkeypatch.setenv("OPAMP_DB_PATH", str(tmp_path / "test_registry.db"))
     monkeypatch.setenv("OPAMP_RATE_LIMIT", "1000/minute")  # disable rate limit in tests
 
@@ -51,19 +55,20 @@ async def app(monkeypatch, tmp_path):
     reload(cfg_module)
     from opamp_server.main import create_app
     _app = create_app()
-    return _app
 
+    # Manually trigger startup lifecycle so init_db() and hydration run before requests
+    for handler in _app.router.on_startup:
+        await handler()
 
-@pytest_asyncio.fixture
-async def async_client(app):
-    """Async HTTP client connected to the FastAPI test app.
-
-    Uses a temporary directory for SQLite to isolate each test.
-    """
     async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
+        transport=ASGITransport(app=_app), base_url="http://test"
     ) as client:
+        # Make the app accessible from the client for fixtures that need it
+        client.app = _app  # type: ignore[attr-defined]
         yield client
+
+    for handler in _app.router.on_shutdown:
+        await handler()
 
 
 @pytest.fixture
@@ -111,11 +116,11 @@ def config_body():
 
 
 @pytest_asyncio.fixture
-async def registered_agent_uid(app):
+async def registered_agent_uid(async_client):
     """Return a bytes UID for an agent that has been registered in the test registry.
 
-    Adds an AgentRecord to app.state.registry so POST /api/v1/collectors/{id}/config
-    can find the agent.
+    Depends on async_client to ensure app startup (init_db) has run before
+    adding the agent record to the registry.
     """
     from opamp_server.registry import AgentRecord
     uid = b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10"
@@ -126,7 +131,7 @@ async def registered_agent_uid(app):
         capabilities=0x4807,  # ReportsStatus | AcceptsRemoteConfig | ReportsHealth | ...
         sequence_num=1,
     )
-    await app.state.registry.upsert(record)
+    await async_client.app.state.registry.upsert(record)
     return uid
 
 

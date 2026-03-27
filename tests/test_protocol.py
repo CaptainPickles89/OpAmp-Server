@@ -39,7 +39,7 @@ class TestBuildSuccessResponse:
         resp = opamp.ServerToAgent()
         resp.ParseFromString(raw)
         assert resp.capabilities == SERVER_CAPABILITIES
-        assert resp.capabilities == 0x05
+        assert resp.capabilities == 0x07  # Phase 2: OffersRemoteConfig (0x02) added
 
     def test_flags_default_to_zero(self):
         raw = build_success_response(agent_uid=TEST_UID)

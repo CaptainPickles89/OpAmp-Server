@@ -44,13 +44,13 @@ class TestValidRequest:
     async def test_capabilities_present_in_response(
         self, async_client, valid_agent_to_server_bytes
     ):
-        """PROTO-03: ServerToAgent.capabilities MUST be 0x05 (AcceptsStatus | AcceptsEffectiveConfig)."""
+        """PROTO-03: ServerToAgent.capabilities MUST be 0x07 (AcceptsStatus | OffersRemoteConfig | AcceptsEffectiveConfig)."""
         response = await async_client.post(
             OPAMP_URL, content=valid_agent_to_server_bytes, headers=HEADERS
         )
         msg = opamp.ServerToAgent()
         msg.ParseFromString(response.content)
-        assert msg.capabilities == 0x05
+        assert msg.capabilities == 0x07  # Phase 2: OffersRemoteConfig (0x02) added
 
     async def test_no_error_response_on_valid_request(
         self, async_client, valid_agent_to_server_bytes

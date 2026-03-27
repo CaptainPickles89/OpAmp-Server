@@ -234,7 +234,8 @@ async def test_failed_triggers_rollback(
     )
 
     # Collector reports FAILED for second push
-    await async_client.post(
+    # The handler processes FAILED and immediately delivers rollback in the same response
+    failed_resp = await async_client.post(
         "/v1/opamp",
         content=opamp_agent_message(
             registered_agent_uid,
@@ -246,15 +247,10 @@ async def test_failed_triggers_rollback(
         headers={"Content-Type": "application/x-protobuf"},
     )
 
-    # Next poll MUST deliver the first (confirmed) config as rollback
-    resp = await async_client.post(
-        "/v1/opamp",
-        content=opamp_agent_message(registered_agent_uid, sequence_num=6).SerializeToString(),
-        headers={"Content-Type": "application/x-protobuf"},
-    )
+    # The FAILED response itself includes the rollback config (server delivers immediately)
     server_msg = opamp.ServerToAgent()
-    server_msg.ParseFromString(resp.content)
-    assert server_msg.HasField("remote_config")
+    server_msg.ParseFromString(failed_resp.content)
+    assert server_msg.HasField("remote_config"), "rollback config must be in FAILED response"
     rollback_body = server_msg.remote_config.config.config_map["collector.yaml"].body
     assert rollback_body == first_yaml.encode("utf-8")
 

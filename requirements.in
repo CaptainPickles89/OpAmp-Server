@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
 protobuf
+pyyaml>=6.0.2
 uuid6
 aiosqlite
 slowapi
