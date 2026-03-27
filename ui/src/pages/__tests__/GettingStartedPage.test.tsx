@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { renderWithProviders } from '@/test/renderWithProviders'
 import { GettingStartedPage } from '../GettingStartedPage'
