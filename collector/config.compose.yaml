@@ -1,0 +1,43 @@
+# collector/config.compose.yaml
+# OpAMP collector config for Docker Compose deployment.
+# The OpAMP endpoint uses the Compose service name "api" for DNS resolution.
+# This file is mounted into the collector container by compose.yaml.
+# For standalone (non-Compose) development, use config.yaml instead.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch:
+
+extensions:
+  opamp:
+    server:
+      http:
+        endpoint: http://api:8000/v1/opamp
+        polling_interval: 5s
+    agent_description:
+      non_identifying_attributes:
+        "description": "A description here..."
+        "foo": "bar"
+        "agent.name": "Sample Collector"
+    capabilities:
+      reports_effective_config: true
+      reports_health: true
+  health_check:
+  pprof:
+  zpages:
+
+exporters:
+  debug:
+
+service:
+  extensions: [health_check, pprof, zpages, opamp]
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
