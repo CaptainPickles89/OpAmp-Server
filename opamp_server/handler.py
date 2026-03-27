@@ -6,6 +6,8 @@ from fastapi import APIRouter, Request, Response
 from google.protobuf.message import DecodeError
 
 import opamp_pb2 as opamp
+from opamp_server.config import settings
+from opamp_server.limiter import limiter
 from opamp_server.protocol import (
     FLAG_REPORT_FULL_STATE,
     ERROR_TYPE_BAD_REQUEST,
@@ -26,6 +28,7 @@ _sequence_store: dict[str, int] = {}
 
 
 @router.post("/v1/opamp")
+@limiter.limit(settings.rate_limit)
 async def opamp_handler(request: Request) -> Response:
     """Handle OpAMP AgentToServer messages and return ServerToAgent responses.
 

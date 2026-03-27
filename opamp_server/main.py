@@ -2,11 +2,37 @@
 from __future__ import annotations
 
 import structlog
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
+from slowapi.errors import RateLimitExceeded
 
 from opamp_server.config import settings
 from opamp_server.handler import router
+from opamp_server.limiter import limiter
 from opamp_server.logging_config import configure_logging
+from opamp_server.middleware import MaxBodySizeMiddleware
+from opamp_server.protocol import ERROR_TYPE_UNAVAILABLE, build_error_response
+
+PROTOBUF_CONTENT_TYPE = "application/x-protobuf"
+
+
+def _opamp_rate_limit_handler(request: Request, exc: RateLimitExceeded) -> Response:
+    """Override slowapi's default JSON 429 response with binary ServerErrorResponse.
+
+    Args:
+        request: The rate-limited request.
+        exc: The RateLimitExceeded exception from slowapi.
+
+    Returns:
+        Binary-encoded ServerErrorResponse wrapped in ServerToAgent.
+    """
+    return Response(
+        content=build_error_response(
+            error_type=ERROR_TYPE_UNAVAILABLE,
+            error_message=f"Rate limit exceeded: {exc.detail}",
+        ),
+        media_type=PROTOBUF_CONTENT_TYPE,
+        status_code=200,
+    )
 
 
 def create_app() -> FastAPI:
@@ -23,6 +49,15 @@ def create_app() -> FastAPI:
         description="Spec-compliant OpenTelemetry Agent Management Protocol server",
         version="0.1.0",
     )
+
+    # State for slowapi
+    app.state.limiter = limiter
+
+    # Register custom rate limit handler (returns binary protobuf, not JSON)
+    app.add_exception_handler(RateLimitExceeded, _opamp_rate_limit_handler)
+
+    # Body size limit middleware (applied before routing)
+    app.add_middleware(MaxBodySizeMiddleware, max_body_size=settings.max_body_size)
 
     app.include_router(router)
 
