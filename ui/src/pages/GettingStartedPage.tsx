@@ -10,6 +10,10 @@ const BASE_CONFIG_YAML = `extensions:
     agent_description:
       non_identifying_attributes:
         service.name: my-collector
+        host.name: \${env:HOSTNAME}
+        service.instance.id: \${env:POD_NAME}
+        deployment.environment: production
+        host.ip: \${env:HOST_IP}
 
 service:
   extensions: [opamp]`
@@ -19,12 +23,12 @@ export function GettingStartedPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-semibold text-slate-100 mb-8">Getting Started</h1>
+      <h1 className="text-3xl font-semibold text-foreground mb-8">Getting Started</h1>
 
       {/* Section 1: What is OpAMP? */}
       <section className="mb-10">
-        <h2 className="text-xl font-semibold text-slate-100 mb-3">What is OpAMP?</h2>
-        <p className="text-slate-300 leading-relaxed">
+        <h2 className="text-xl font-semibold text-foreground mb-3">What is OpAMP?</h2>
+        <p className="text-foreground-secondary leading-relaxed">
           OpAMP (Open Agent Management Protocol) is a CNCF standard for remotely managing
           OpenTelemetry Collectors. This server implements the OpAMP specification, allowing
           collectors to register themselves, report health and config, and receive config
@@ -34,25 +38,25 @@ export function GettingStartedPage() {
 
       {/* Section 2: Connect a Collector */}
       <section>
-        <h2 className="text-xl font-semibold text-slate-100 mb-4">Connect a Collector</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-4">Connect a Collector</h2>
 
         <ol className="space-y-6 list-none">
           {/* Step 1 */}
           <li className="flex gap-4">
-            <span className="flex-none flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-slate-200">
+            <span className="flex-none flex h-7 w-7 items-center justify-center rounded-full bg-otel-blue text-sm font-semibold text-white shadow-[0_0_8px_rgba(66,92,199,0.4)]">
               1
             </span>
             <div className="flex-1">
-              <p className="font-semibold text-slate-200 mb-1">
+              <p className="font-semibold text-foreground mb-1">
                 Install the OpenTelemetry Contrib Collector
               </p>
-              <p className="text-slate-400 text-sm">
+              <p className="text-foreground-muted text-sm">
                 Download the{' '}
                 <a
                   href="https://github.com/open-telemetry/opentelemetry-collector-releases/releases"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 underline hover:text-blue-300"
+                  className="text-otel-blue hover:text-blue-300 underline transition-colors"
                 >
                   otelcol-contrib release
                 </a>{' '}
@@ -63,15 +67,19 @@ export function GettingStartedPage() {
 
           {/* Step 2 */}
           <li className="flex gap-4">
-            <span className="flex-none flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-slate-200">
+            <span className="flex-none flex h-7 w-7 items-center justify-center rounded-full bg-otel-blue text-sm font-semibold text-white shadow-[0_0_8px_rgba(66,92,199,0.4)]">
               2
             </span>
             <div className="flex-1">
-              <p className="font-semibold text-slate-200 mb-1">
+              <p className="font-semibold text-foreground mb-1">
                 Add the OpAMP extension to your collector config
               </p>
-              <p className="text-slate-400 text-sm mb-3">
-                Add the following to your collector's <code className="bg-slate-800 px-1 rounded text-slate-300">config.yaml</code>:
+              <p className="text-foreground-muted text-sm mb-3">
+                Add the following to your collector's{' '}
+                <code className="bg-otel-blue-subtle px-1.5 py-0.5 rounded text-foreground-secondary text-xs font-mono">
+                  config.yaml
+                </code>
+                :
               </p>
               <div className="relative">
                 <ConfigEditor value={BASE_CONFIG_YAML} readOnly={true} />
@@ -84,16 +92,16 @@ export function GettingStartedPage() {
 
           {/* Step 3 */}
           <li className="flex gap-4">
-            <span className="flex-none flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-sm font-semibold text-slate-200">
+            <span className="flex-none flex h-7 w-7 items-center justify-center rounded-full bg-otel-blue text-sm font-semibold text-white shadow-[0_0_8px_rgba(66,92,199,0.4)]">
               3
             </span>
             <div className="flex-1">
-              <p className="font-semibold text-slate-200 mb-1">
+              <p className="font-semibold text-foreground mb-1">
                 Start (or restart) your collector
               </p>
-              <p className="text-slate-400 text-sm">
+              <p className="text-foreground-muted text-sm">
                 Once the collector starts with this config, it will appear in the{' '}
-                <Link to="/collectors" className="text-blue-400 underline hover:text-blue-300">
+                <Link to="/collectors" className="text-otel-blue hover:text-blue-300 underline transition-colors">
                   Collectors
                 </Link>{' '}
                 list within a few seconds.
@@ -103,10 +111,12 @@ export function GettingStartedPage() {
         </ol>
 
         {/* Server URL display */}
-        <div className="mt-8 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-          <p className="text-sm text-slate-400 mb-2">Your server's OpAMP endpoint:</p>
+        <div className="mt-8 rounded-lg border border-border-accent bg-card p-4">
+          <p className="text-xs font-medium text-foreground-subtle uppercase tracking-wider mb-2">
+            Your server's OpAMP endpoint
+          </p>
           <div className="flex items-center gap-3">
-            <code className="font-mono text-green-400 text-sm break-all flex-1">
+            <code className="font-mono text-otel-amber text-sm break-all flex-1">
               {serverEndpoint}
             </code>
             <CopyButton text={serverEndpoint} />

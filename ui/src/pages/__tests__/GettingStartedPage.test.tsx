@@ -43,4 +43,24 @@ describe('GettingStartedPage', () => {
     const endpointEl = document.querySelector('code.font-mono')
     expect(endpointEl?.textContent).toContain(window.location.origin)
   })
+
+  it('BASE_CONFIG_YAML includes host.name resource attribute', () => {
+    const { container } = renderWithProviders(<GettingStartedPage />)
+    expect(container.textContent).toContain('host.name')
+  })
+
+  it('BASE_CONFIG_YAML includes service.instance.id resource attribute', () => {
+    const { container } = renderWithProviders(<GettingStartedPage />)
+    expect(container.textContent).toContain('service.instance.id')
+  })
+
+  it('BASE_CONFIG_YAML includes deployment.environment resource attribute', () => {
+    const { container } = renderWithProviders(<GettingStartedPage />)
+    expect(container.textContent).toContain('deployment.environment')
+  })
+
+  it('BASE_CONFIG_YAML includes host.ip resource attribute', () => {
+    const { container } = renderWithProviders(<GettingStartedPage />)
+    expect(container.textContent).toContain('host.ip')
+  })
 })
