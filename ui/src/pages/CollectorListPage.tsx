@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useCollectors } from '@/hooks/useCollectors'
 import { HealthBadge } from '@/components/HealthBadge'
 import { RelativeTime } from '@/components/RelativeTime'
+import { CapabilityChipList } from '@/components/CapabilityChipList'
 import type { HealthStatus } from '@/api/types'
 
 const HEALTH_FILTERS: Array<{ value: HealthStatus | 'all'; label: string }> = [
@@ -20,13 +21,13 @@ function truncateUid(uid: string): string {
 
 function CollectorTableSkeleton() {
   return (
-    <div className="rounded-lg border border-slate-800 overflow-hidden" aria-label="Loading collectors">
+    <div className="rounded-lg border border-border overflow-hidden" aria-label="Loading collectors">
       {Array.from({ length: 5 }, (_, i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-slate-800 last:border-b-0">
-          <div className="h-4 w-48 animate-pulse rounded bg-slate-700" />
-          <div className="h-4 w-20 animate-pulse rounded bg-slate-700" />
-          <div className="h-4 w-24 animate-pulse rounded bg-slate-700" />
-          <div className="h-4 w-12 animate-pulse rounded bg-slate-700" />
+        <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-border last:border-b-0">
+          <div className="h-4 w-48 animate-pulse rounded bg-skeleton" />
+          <div className="h-4 w-20 animate-pulse rounded bg-skeleton" />
+          <div className="h-4 w-24 animate-pulse rounded bg-skeleton" />
+          <div className="h-4 w-12 animate-pulse rounded bg-skeleton" />
         </div>
       ))}
     </div>
@@ -51,8 +52,8 @@ export function CollectorListPage() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-100">Collectors</h1>
-        <div className="flex items-center gap-2 text-xs text-slate-400">
+        <h1 className="text-2xl font-semibold text-foreground">Collectors</h1>
+        <div className="flex items-center gap-2 text-xs text-foreground-subtle">
           {isFetching && (
             <svg
               className="h-3 w-3 animate-spin"
@@ -75,18 +76,22 @@ export function CollectorListPage() {
           placeholder="Filter by UID..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 w-64"
+          className="rounded-full border border-border-accent bg-card px-4 py-1.5 text-sm text-foreground placeholder-foreground-subtle focus:outline-none focus:ring-1 focus:ring-otel-blue w-64"
           aria-label="Search collectors by UID"
         />
-        <div className="flex gap-1" role="group" aria-label="Filter by health status">
+        <div
+          className="flex items-center gap-1 rounded-full bg-nav-pill border border-border-accent/40 px-1.5 py-1"
+          role="group"
+          aria-label="Filter by health status"
+        >
           {HEALTH_FILTERS.map(({ value, label }) => (
             <button
               key={value}
               onClick={() => setHealthFilter(value)}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+              className={`rounded-full px-3 py-0.5 text-xs font-medium transition-all duration-200 ${
                 healthFilter === value
-                  ? 'bg-slate-600 text-slate-100'
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+                  ? 'bg-otel-blue text-white shadow-[0_0_8px_rgba(66,92,199,0.35)]'
+                  : 'text-foreground-muted hover:text-foreground hover:bg-hover'
               }`}
             >
               {label}
@@ -99,12 +104,12 @@ export function CollectorListPage() {
       {isLoading && <CollectorTableSkeleton />}
 
       {isError && (
-        <div className="rounded-lg border border-slate-800 p-8 text-center">
-          <p className="text-slate-300 font-medium">Failed to load collectors.</p>
-          <p className="text-slate-500 text-sm mt-1">Check that the server is running and try again.</p>
+        <div className="rounded-lg border border-border p-8 text-center">
+          <p className="text-foreground-secondary font-medium">Failed to load collectors.</p>
+          <p className="text-foreground-subtle text-sm mt-1">Check that the server is running and try again.</p>
           <button
             onClick={() => void refetch()}
-            className="mt-4 rounded-md bg-slate-700 px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 transition-colors"
+            className="mt-4 rounded-full bg-otel-blue px-5 py-2 text-sm text-white hover:bg-otel-blue-hover transition-colors shadow-[0_0_10px_rgba(66,92,199,0.3)]"
           >
             Retry
           </button>
@@ -112,11 +117,11 @@ export function CollectorListPage() {
       )}
 
       {!isLoading && !isError && data?.length === 0 && (
-        <div className="rounded-lg border border-slate-800 p-8 text-center">
-          <p className="text-slate-300 font-medium">No collectors connected.</p>
-          <p className="text-slate-500 text-sm mt-1">
+        <div className="rounded-lg border border-border p-8 text-center">
+          <p className="text-foreground-secondary font-medium">No collectors connected.</p>
+          <p className="text-foreground-subtle text-sm mt-1">
             See{' '}
-            <a href="/getting-started" className="text-slate-300 underline hover:text-white">
+            <a href="/getting-started" className="text-otel-amber hover:text-amber-300 transition-colors">
               Getting Started
             </a>{' '}
             to connect your first collector.
@@ -125,11 +130,11 @@ export function CollectorListPage() {
       )}
 
       {!isLoading && !isError && data && data.length > 0 && filtered.length === 0 && hasActiveFilters && (
-        <div className="rounded-lg border border-slate-800 p-8 text-center">
-          <p className="text-slate-300 font-medium">No collectors match your filters.</p>
+        <div className="rounded-lg border border-border p-8 text-center">
+          <p className="text-foreground-secondary font-medium">No collectors match your filters.</p>
           <button
             onClick={() => { setSearch(''); setHealthFilter('all') }}
-            className="mt-3 rounded-md bg-slate-700 px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 transition-colors"
+            className="mt-3 rounded-full bg-otel-blue px-5 py-2 text-sm text-white hover:bg-otel-blue-hover transition-colors"
           >
             Clear filters
           </button>
@@ -137,13 +142,13 @@ export function CollectorListPage() {
       )}
 
       {!isLoading && !isError && filtered.length > 0 && (
-        <div className="rounded-lg border border-slate-800 overflow-hidden">
+        <div className="rounded-lg border border-border overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-4 gap-4 px-4 py-2 bg-slate-800/50 text-xs font-medium text-slate-400 uppercase tracking-wider">
-            <span>Instance UID</span>
-            <span>Health</span>
-            <span>Last Seen</span>
-            <span>Capabilities</span>
+          <div className="grid grid-cols-4 gap-4 px-4 py-2.5 bg-card text-xs font-medium text-foreground-subtle uppercase tracking-widest border-b border-border">
+            <span className="text-center">Instance UID</span>
+            <span className="text-center">Health</span>
+            <span className="text-center">Last Seen</span>
+            <span className="text-center">Capabilities</span>
           </div>
           {/* Rows */}
           {filtered.map(collector => (
@@ -151,21 +156,23 @@ export function CollectorListPage() {
               key={collector.instance_uid}
               role="row"
               onClick={() => navigate(`/collectors/${collector.instance_uid}`)}
-              className="grid grid-cols-4 gap-4 px-4 py-3 border-t border-slate-800 cursor-pointer hover:bg-slate-800/50 transition-colors items-center"
+              className="grid grid-cols-4 gap-4 px-4 py-3 border-t border-border cursor-pointer hover:bg-hover transition-colors items-center group"
             >
               <span
-                className="font-mono text-sm text-slate-300 truncate"
+                className="font-mono text-sm text-foreground-secondary group-hover:text-foreground truncate text-center transition-colors"
                 title={collector.instance_uid}
               >
                 {truncateUid(collector.instance_uid)}
               </span>
-              <span>
-                <HealthBadge status={collector.health_status} size="sm" />
+              <span className="flex justify-center">
+                <HealthBadge status={collector.health_status} variant="pulse" />
               </span>
-              <span className="text-sm text-slate-400">
+              <span className="text-sm text-foreground-subtle text-center">
                 <RelativeTime nanoseconds={collector.last_seen} />
               </span>
-              <span className="text-sm text-slate-400 font-mono">{collector.capabilities}</span>
+              <span className="flex justify-center">
+                <CapabilityChipList capabilities={collector.capabilities} />
+              </span>
             </div>
           ))}
         </div>

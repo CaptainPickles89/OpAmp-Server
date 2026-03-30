@@ -5,14 +5,15 @@ import { HealthBadge } from '@/components/HealthBadge'
 import { RelativeTime } from '@/components/RelativeTime'
 import { PushStatusBadge } from '@/components/PushStatusBadge'
 import { ConfigEditor } from '@/components/ConfigEditor'
+import { CapabilityChipList } from '@/components/CapabilityChipList'
 import { extractYaml } from '@/api/types'
 import type { HealthSnapshot } from '@/api/types'
 import { ApiError } from '@/api/client'
 
 function HealthSnapshotRow({ snapshot }: { snapshot: HealthSnapshot }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-slate-800 last:border-b-0 text-sm">
-      <span className="text-slate-400">
+    <div className="flex items-center justify-between py-2 border-b border-border last:border-b-0 text-sm">
+      <span className="text-foreground-muted">
         <RelativeTime nanoseconds={snapshot.recorded_at} />
       </span>
       <span className={snapshot.healthy ? 'text-green-400' : 'text-red-400'}>
@@ -31,11 +32,11 @@ function DetailSkeleton() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" aria-label="Loading collector details">
       {[0, 1].map(i => (
-        <div key={i} className="rounded-lg border border-slate-800 p-4 space-y-3">
-          <div className="h-5 w-32 animate-pulse rounded bg-slate-700" />
-          <div className="h-4 w-full animate-pulse rounded bg-slate-700" />
-          <div className="h-4 w-3/4 animate-pulse rounded bg-slate-700" />
-          <div className="h-64 animate-pulse rounded bg-slate-700" />
+        <div key={i} className="rounded-lg border border-border p-4 space-y-3">
+          <div className="h-5 w-32 animate-pulse rounded bg-skeleton" />
+          <div className="h-4 w-full animate-pulse rounded bg-skeleton" />
+          <div className="h-4 w-3/4 animate-pulse rounded bg-skeleton" />
+          <div className="h-64 animate-pulse rounded bg-skeleton" />
         </div>
       ))}
     </div>
@@ -101,17 +102,17 @@ export function CollectorDetailPage() {
     const is404 = error instanceof ApiError && error.status === 404
     if (is404) {
       return (
-        <div className="rounded-lg border border-slate-800 p-8 text-center">
-          <p className="text-slate-300 font-medium">Collector not found.</p>
-          <Link to="/collectors" className="mt-4 inline-block text-sm text-slate-400 underline hover:text-slate-100">
+        <div className="rounded-lg border border-border p-8 text-center">
+          <p className="text-foreground-secondary font-medium">Collector not found.</p>
+          <Link to="/collectors" className="mt-4 inline-block text-sm text-otel-blue hover:text-blue-300 transition-colors">
             Back to collectors
           </Link>
         </div>
       )
     }
     return (
-      <div className="rounded-lg border border-slate-800 p-8 text-center">
-        <p className="text-slate-300 font-medium">Failed to load collector details.</p>
+      <div className="rounded-lg border border-border p-8 text-center">
+        <p className="text-foreground-secondary font-medium">Failed to load collector details.</p>
       </div>
     )
   }
@@ -123,41 +124,41 @@ export function CollectorDetailPage() {
   return (
     <div className="space-y-4">
       {/* Back link */}
-      <Link to="/collectors" className="text-sm text-slate-400 hover:text-slate-100 transition-colors">
-        ← Collectors
+      <Link to="/collectors" className="inline-flex items-center gap-1.5 text-sm text-foreground-subtle hover:text-otel-blue transition-colors">
+        <span aria-hidden="true">←</span> Collectors
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: Health Panel */}
-        <div className="rounded-lg border border-slate-800 bg-[#0E1223] p-4 space-y-4">
+        <div className="rounded-lg border border-border bg-card p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-100">Health</h2>
+            <h2 className="text-lg font-semibold text-foreground">Health</h2>
             <HealthBadge status={collector.health_status} size="md" />
           </div>
 
           <dl className="space-y-2 text-sm">
             <div className="flex flex-col">
-              <dt className="text-slate-400">Instance UID</dt>
-              <dd className="font-mono text-slate-200 break-all">{collector.instance_uid}</dd>
+              <dt className="text-foreground-muted">Instance UID</dt>
+              <dd className="font-mono text-foreground-secondary break-all">{collector.instance_uid}</dd>
             </div>
             <div className="flex flex-col">
-              <dt className="text-slate-400">First Seen</dt>
-              <dd className="text-slate-200"><RelativeTime nanoseconds={collector.first_seen} /></dd>
+              <dt className="text-foreground-muted">First Seen</dt>
+              <dd className="text-foreground-secondary"><RelativeTime nanoseconds={collector.first_seen} /></dd>
             </div>
             <div className="flex flex-col">
-              <dt className="text-slate-400">Last Seen</dt>
-              <dd className="text-slate-200"><RelativeTime nanoseconds={collector.last_seen} /></dd>
+              <dt className="text-foreground-muted">Last Seen</dt>
+              <dd className="text-foreground-secondary"><RelativeTime nanoseconds={collector.last_seen} /></dd>
             </div>
             <div className="flex flex-col">
-              <dt className="text-slate-400">Capabilities</dt>
-              <dd className="font-mono text-slate-200">{collector.capabilities}</dd>
+              <dt className="text-foreground-muted">Capabilities</dt>
+              <dd><CapabilityChipList capabilities={collector.capabilities} /></dd>
             </div>
           </dl>
 
           {collector.health_history.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-slate-300 mb-2">Health History</h3>
-              <div className="rounded border border-slate-800">
+              <h3 className="text-xs font-medium text-foreground-subtle uppercase tracking-wider mb-2">Health History</h3>
+              <div className="rounded border border-border">
                 {collector.health_history.map(snapshot => (
                   <HealthSnapshotRow key={snapshot.recorded_at} snapshot={snapshot} />
                 ))}
@@ -167,14 +168,14 @@ export function CollectorDetailPage() {
         </div>
 
         {/* Right: Config Panel */}
-        <div className="rounded-lg border border-slate-800 bg-[#0E1223] p-4 space-y-4">
+        <div className="rounded-lg border border-border bg-card p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-100">Effective Config</h2>
+            <h2 className="text-lg font-semibold text-foreground">Effective Config</h2>
             <PushStatusBadge pushState={collector.push_status.push_state} />
           </div>
 
           {!collector.effective_config && (
-            <p className="text-slate-500 text-sm italic">No config reported yet.</p>
+            <p className="text-foreground-subtle text-sm italic">No config reported yet.</p>
           )}
 
           <ConfigEditor
@@ -199,17 +200,17 @@ export function CollectorDetailPage() {
             </div>
           )}
 
-          {/* FAILED callout (UI-07) */}
+          {/* FAILED callout */}
           {collector.push_status.push_state === 'FAILED' && (
             <div role="alert" className="rounded border border-red-800 bg-red-950 p-4">
               <p className="text-red-400 font-semibold">Config push failed</p>
-              <p className="text-sm text-slate-300 mt-1">
+              <p className="text-sm text-foreground-secondary mt-1">
                 The server has automatically rolled back to the previous config.
               </p>
             </div>
           )}
 
-          {/* APPLIED success callout (UI-06) */}
+          {/* APPLIED success callout */}
           {collector.push_status.push_state === 'APPLIED' && (
             <div role="status" className="rounded border border-green-800 bg-green-950 p-4">
               <p className="text-green-400 font-semibold">Config successfully applied</p>
@@ -220,7 +221,7 @@ export function CollectorDetailPage() {
           {!isEditMode ? (
             <button
               onClick={handleEditStart}
-              className="rounded-md bg-slate-700 px-4 py-2 text-sm text-slate-100 hover:bg-slate-600 transition-colors"
+              className="rounded-full bg-otel-blue px-5 py-2 text-sm text-white hover:bg-otel-blue-hover transition-colors shadow-[0_0_10px_rgba(66,92,199,0.3)]"
             >
               Edit &amp; Push
             </button>
@@ -229,14 +230,14 @@ export function CollectorDetailPage() {
               <button
                 onClick={() => void handlePush()}
                 disabled={mutation.isPending}
-                className="rounded-md bg-blue-700 px-4 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                className="rounded-full bg-otel-blue px-5 py-2 text-sm text-white hover:bg-otel-blue-hover disabled:opacity-50 transition-colors shadow-[0_0_10px_rgba(66,92,199,0.3)]"
               >
                 {mutation.isPending ? 'Pushing...' : 'Push Config'}
               </button>
               <button
                 onClick={handleCancel}
                 disabled={mutation.isPending}
-                className="rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                className="rounded-full border border-border-accent px-5 py-2 text-sm text-foreground-muted hover:bg-hover hover:text-foreground disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>

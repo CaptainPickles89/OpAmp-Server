@@ -18,7 +18,8 @@ describe('CollectorDetailPage', () => {
   it('renders health panel with status badge', async () => {
     renderDetailPage()
     await waitFor(() => {
-      expect(screen.getByText('Health')).toBeTruthy()
+      // Use heading role to distinguish the "Health" section heading from capability chips
+      expect(screen.getByRole('heading', { name: 'Health' })).toBeTruthy()
     })
     // HealthBadge for "healthy" — may appear multiple times (badge + history)
     const healthyElements = screen.getAllByText('Healthy')
