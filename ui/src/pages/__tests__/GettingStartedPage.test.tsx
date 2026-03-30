@@ -34,13 +34,13 @@ describe('GettingStartedPage', () => {
 
   it('renders server endpoint URL with /v1/opamp path', () => {
     renderWithProviders(<GettingStartedPage />)
-    const endpointEl = document.querySelector('code.font-mono')
+    const endpointEl = document.querySelector('code.font-mono.text-otel-amber')
     expect(endpointEl?.textContent).toContain('/v1/opamp')
   })
 
   it('server endpoint URL uses window.location.origin', () => {
     renderWithProviders(<GettingStartedPage />)
-    const endpointEl = document.querySelector('code.font-mono')
+    const endpointEl = document.querySelector('code.font-mono.text-otel-amber')
     expect(endpointEl?.textContent).toContain(window.location.origin)
   })
 
