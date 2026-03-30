@@ -87,6 +87,21 @@ CREATE INDEX IF NOT EXISTS idx_push_agent
     ON config_pushes(instance_uid, pushed_at DESC);
 """
 
+_CREATE_RESOURCE_ATTRS = """
+CREATE TABLE IF NOT EXISTS agent_resource_attrs (
+    instance_uid TEXT NOT NULL REFERENCES agents(instance_uid),
+    key          TEXT NOT NULL,
+    value        TEXT NOT NULL,
+    updated_at   INTEGER NOT NULL,
+    PRIMARY KEY (instance_uid, key)
+);
+"""
+
+_CREATE_RESOURCE_ATTR_KEY_INDEX = """
+CREATE INDEX IF NOT EXISTS idx_resource_attr_key
+    ON agent_resource_attrs(key);
+"""
+
 
 async def init_db() -> None:
     """Initialize the SQLite database — create tables and enable WAL mode.
@@ -106,6 +121,8 @@ async def init_db() -> None:
         await db.execute(_CREATE_CONFIG_INDEX)
         await db.execute(_CREATE_CONFIG_PUSHES)
         await db.execute(_CREATE_PUSH_INDEX)
+        await db.execute(_CREATE_RESOURCE_ATTRS)
+        await db.execute(_CREATE_RESOURCE_ATTR_KEY_INDEX)
         await db.commit()
 
     log.info("db_initialized", db_path=str(db_path))
@@ -428,6 +445,7 @@ async def purge_agent(instance_uid: bytes) -> None:
         await db.execute("DELETE FROM health_snapshots WHERE instance_uid = ?", (uid_hex,))
         await db.execute("DELETE FROM effective_configs WHERE instance_uid = ?", (uid_hex,))
         await db.execute("DELETE FROM config_pushes WHERE instance_uid = ?", (uid_hex,))
+        await db.execute("DELETE FROM agent_resource_attrs WHERE instance_uid = ?", (uid_hex,))
         await db.execute("DELETE FROM agents WHERE instance_uid = ?", (uid_hex,))
         await db.commit()
 
@@ -598,3 +616,90 @@ async def get_latest_effective_config(instance_uid: bytes) -> Optional[dict]:
                 "config_hash": row["config_hash"],
                 "config_json": json.loads(row["config_json"]),
             }
+
+
+async def upsert_resource_attrs(instance_uid: bytes, attrs: dict[str, str]) -> None:
+    """Insert or update resource attribute key/value rows for an agent.
+
+    Uses ON CONFLICT upsert so repeated calls for the same key overwrite the value.
+
+    Args:
+        instance_uid: Agent's raw 16-byte UID.
+        attrs: Mapping of attribute key to string value.
+    """
+    uid_hex = instance_uid.hex()
+    now = time.time_ns()
+    async with aiosqlite.connect(_settings().db_path) as db:
+        for key, value in attrs.items():
+            await db.execute(
+                """
+                INSERT INTO agent_resource_attrs (instance_uid, key, value, updated_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(instance_uid, key) DO UPDATE SET
+                    value = excluded.value,
+                    updated_at = excluded.updated_at
+                """,
+                (uid_hex, key, value, now),
+            )
+        await db.commit()
+
+
+async def get_resource_attrs_for_agents(
+    instance_uids: list[str],
+) -> dict[str, dict[str, str]]:
+    """Batch-fetch resource attributes for a list of agents.
+
+    Args:
+        instance_uids: List of hex UID strings (32-char hex, no dashes).
+
+    Returns:
+        Dict mapping hex UID string -> {key: value} attribute dict.
+        Empty dict if instance_uids is empty or no attributes exist.
+    """
+    if not instance_uids:
+        return {}
+
+    db_path = Path(_settings().db_path)
+    if not db_path.exists():
+        return {}
+
+    placeholders = ",".join("?" * len(instance_uids))
+    result: dict[str, dict[str, str]] = {}
+
+    async with aiosqlite.connect(str(db_path)) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            f"SELECT instance_uid, key, value FROM agent_resource_attrs "
+            f"WHERE instance_uid IN ({placeholders})",
+            instance_uids,
+        ) as cursor:
+            async for row in cursor:
+                uid = row["instance_uid"]
+                if uid not in result:
+                    result[uid] = {}
+                result[uid][row["key"]] = row["value"]
+
+    return result
+
+
+async def get_all_resource_attr_keys() -> list[str]:
+    """Return all distinct resource attribute keys stored across all agents, sorted.
+
+    Returns:
+        Sorted list of unique key strings.
+        Empty list if no attributes exist or DB does not exist.
+    """
+    db_path = Path(_settings().db_path)
+    if not db_path.exists():
+        return []
+
+    keys: list[str] = []
+
+    async with aiosqlite.connect(str(db_path)) as db:
+        async with db.execute(
+            "SELECT DISTINCT key FROM agent_resource_attrs ORDER BY key"
+        ) as cursor:
+            async for row in cursor:
+                keys.append(row[0])
+
+    return keys
