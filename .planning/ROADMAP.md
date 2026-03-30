@@ -23,7 +23,7 @@
 - [x] **Phase 6: Frontend Quick Wins** — Config pre-populate, capability chips, enriched example config (completed 2026-03-30)
 - [x] **Phase 7: Status Landing Page** — New route with live agent health counts and OTel hero (completed 2026-03-30)
 - [ ] **Phase 8: Stale Collector TTL Purge** — Background auto-purge with push-state guard
-- [ ] **Phase 9: Dynamic Resource Attribute Columns** — Column picker with dynamic attribute discovery
+- [x] **Phase 9: Dynamic Resource Attribute Columns** — Column picker with dynamic attribute discovery (completed 2026-03-30)
 
 ## Phase Details
 
@@ -89,9 +89,9 @@ Plans:
 Plans:
 - [x] 09-00-PLAN.md — Wave 0: failing test stubs (backend + frontend) for all COLS requirements
 - [x] 09-01-PLAN.md — Wave 1: DB migration (agent_resource_attrs table), persistence functions, handler extraction
-- [ ] 09-02-PLAN.md — Wave 2: API endpoints (attrs/keys + extend list_collectors), Zod types, API client
-- [ ] 09-03-PLAN.md — Wave 3: useResourceAttrKeys hook, useColumnPrefs hook, ColumnPicker component
-- [ ] 09-04-PLAN.md — Wave 4: CollectorListPage integration (dynamic grid, resource attr cells, ColumnPicker wiring)
+- [x] 09-02-PLAN.md — Wave 2: API endpoints (attrs/keys + extend list_collectors), Zod types, API client
+- [x] 09-03-PLAN.md — Wave 3: useResourceAttrKeys hook, useColumnPrefs hook, ColumnPicker component
+- [x] 09-04-PLAN.md — Wave 4: CollectorListPage integration (dynamic grid, resource attr cells, ColumnPicker wiring)
 **UI hint**: yes
 
 ## Progress
@@ -106,4 +106,4 @@ Plans:
 | 6. Frontend Quick Wins | v1.1 | 3/3 | Complete   | 2026-03-30 |
 | 7. Status Landing Page | v1.1 | 2/2 | Complete   | 2026-03-30 |
 | 8. Stale Collector TTL Purge | v1.1 | 1/2 | In Progress|  |
-| 9. Dynamic Resource Attribute Columns | v1.1 | 2/5 | In Progress|  |
+| 9. Dynamic Resource Attribute Columns | v1.1 | 5/5 | Complete   | 2026-03-30 |
