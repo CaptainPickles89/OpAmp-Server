@@ -52,11 +52,26 @@ Operators can see which collectors are connected, understand their health, and s
 - ✓ Vite 8 + React 19 + TypeScript scaffold with Tailwind v4, shadcn/ui — v1.0 (Phase 4)
 - ✓ Multi-stage Dockerfile (node:20-alpine + nginx:1.27-alpine) with SPA fallback and /api/ proxy — v1.0 (Phase 4)
 - ✓ Docker Compose file (`compose.yaml`) bringing up server + UI + example collector as unified stack — v1.0 (Phase 5)
+- ✓ CapabilityChip/CapabilityChipList: decode OpAMP bitmask into named chips ("Remote Config", "Health") with hex fallback for unknown bits — v1.1 (Phase 6)
+- ✓ Config editor pre-seed: seededRef guard seeds CodeMirror with effective_config on first data arrival, poll-safe — v1.1 (Phase 6)
+- ✓ Getting Started BASE_CONFIG_YAML enriched with host.name, service.instance.id, deployment.environment, host.ip — v1.1 (Phase 6)
+- ✓ compose.yaml collector service pinned to otel/opentelemetry-collector-contrib:0.119.0 — v1.1 (Phase 6)
+
+## Current Milestone: v1.1 Operator UX
+
+**Goal:** Improve day-to-day usability — eliminate stale ghost agents, surface readable collector metadata, pre-populate the config editor, and give the app a proper landing page.
+
+**Target features:**
+- Stale collector TTL purge: auto-delete agents unseen for >24h (`OPAMP_COLLECTOR_TTL_HOURS` env var, default 24)
+- Config editor pre-populate: seed CodeMirror with `effective_config` on collector detail page load
+- Capabilities as chips: replace bitmask with human-readable labelled chips in the collector table
+- Enriched example config: add `include_resource_attributes` + `host.name`, `service.instance.id`, `deployment.environment`, `host.ip`; pin collector image version in `compose.yaml`
+- Dynamic resource attribute columns: collector list shows `host.name` column by default; column picker dynamically discovers all resource attribute keys seen across connected collectors and lets operators toggle them on/off; new keys auto-appear in the picker
+- Status landing page: new "Status" nav item with OTel logo hero + gradient, brief UI description, count of currently healthy agents
 
 ### Active
 
-- [ ] Config editor pre-populate: on collector detail page load, seed the CodeMirror editor with `effective_config` from `GET /api/v1/collectors/{id}`. The API already returns the field — it just needs to be set as the initial editor value.
-- [ ] Collector Dockerfile pinned to a specific OTel Contrib version (not `latest`) in compose.yaml service definition
+Phase 6 complete — capability chips, config editor pre-seed, enriched YAML, and compose.yaml image pin all delivered.
 
 ### Out of Scope
 
@@ -122,4 +137,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-30 after v1.0 milestone — all 38 v1 requirements delivered, full stack shipped*
+*Last updated: 2026-03-30 — milestone v1.1 Operator UX started*

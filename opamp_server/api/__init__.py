@@ -7,7 +7,9 @@ from fastapi import APIRouter
 
 from opamp_server.api import collectors as collectors_router
 from opamp_server.api import config as config_router
+from opamp_server.api import stats as stats_router
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(config_router.router)
 api_router.include_router(collectors_router.router)
+api_router.include_router(stats_router.router)
