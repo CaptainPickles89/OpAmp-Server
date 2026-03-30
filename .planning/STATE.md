@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Operator UX
 status: verifying
-last_updated: "2026-03-30T15:46:00Z"
+last_updated: "2026-03-30T15:55:00Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 12
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # Project State
@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ```
 Milestone: v1.1 Operator UX
 Phase: 9
-Plan: 2 complete (09-02)
-Status: In progress — Wave 2 complete, Wave 3 (hooks + components) next
+Plan: 3 complete (09-03)
+Status: In progress — Wave 3 (hooks + components) complete, Wave 4 (CollectorListPage wiring) next
 
 [██████████] Phase 6: Frontend Quick Wins (3/3 plans complete) 100%
 [          ] Phase 7: Status Landing Page
@@ -36,8 +36,8 @@ Status: In progress — Wave 2 complete, Wave 3 (hooks + components) next
 Progress: 1/4 phases complete (all Phase 6 plans delivered)
 ```
 
-Last session: 2026-03-30T15:46:00Z
-Stopped at: Completed 09-02-PLAN.md
+Last session: 2026-03-30T15:55:00Z
+Stopped at: Completed 09-03-PLAN.md
 
 ## Performance Metrics
 
@@ -92,6 +92,11 @@ Stopped at: Completed 09-02-PLAN.md
 - Store asyncio.Task in app.state.purge_task to prevent GC of unawaited background tasks; app.state is canonical FastAPI per-app mutable state store
 - Use getattr(app.state, "purge_task", None) in shutdown — safe guard when startup fails partway through before reaching create_task
 - sleep-first design of start_purge_loop (Plan 01) means no purge fires on server restart — safe for rolling deploys
+
+### Plan 09-03 Decisions (2026-03-30)
+
+- Node.js 22+ built-in localStorage shadows jsdom's Storage in vitest; fixed by pointing globalThis.localStorage at window._localStorage in setupTests.ts
+- ColumnPicker outside-click handler uses ref.contains(event.target) pattern (not event.composedPath) for broad jsdom compatibility
 
 ### Plan 09-02 Decisions (2026-03-30)
 
