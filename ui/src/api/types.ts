@@ -11,6 +11,7 @@ export const CollectorSummarySchema = z.object({
   last_seen: z.number(),
   health_status: HealthStatusSchema,
   capabilities: z.number(),
+  resource_attributes: z.record(z.string(), z.string()).default({}),
 })
 
 export const HealthSnapshotSchema = z.object({
@@ -61,6 +62,12 @@ export const StatsSchema = z.object({
 })
 
 export type Stats = z.infer<typeof StatsSchema>
+
+export const ResourceAttrKeysSchema = z.object({
+  keys: z.array(z.string()),
+})
+
+export type ResourceAttrKeys = z.infer<typeof ResourceAttrKeysSchema>
 
 // --- Utility ---
 
