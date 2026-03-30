@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     rate_limit: str = "100/minute"
     health_snapshot_retention: int = 1000
     effective_config_retention: int = 10
+    collector_ttl_hours: int = 24        # OPAMP_COLLECTOR_TTL_HOURS
+    purge_interval_hours: int = 1        # OPAMP_PURGE_INTERVAL_HOURS
     log_level: str = "INFO"
 
     model_config = {"env_prefix": "OPAMP_"}

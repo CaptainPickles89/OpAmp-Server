@@ -414,6 +414,24 @@ async def get_previous_confirmed_config(instance_uid: bytes) -> Optional[dict]:
             return {"config_hash": row["config_hash"], "config_body": row["config_body"]}
 
 
+async def purge_agent(instance_uid: bytes) -> None:
+    """Delete all rows for an agent across all tables, ordered by FK dependency.
+
+    Delete order: health_snapshots -> effective_configs -> config_pushes -> agents.
+    Phase 9 will add agent_resource_attrs before the agents delete.
+
+    Args:
+        instance_uid: Agent's raw 16-byte UID.
+    """
+    uid_hex = instance_uid.hex()
+    async with aiosqlite.connect(_settings().db_path) as db:
+        await db.execute("DELETE FROM health_snapshots WHERE instance_uid = ?", (uid_hex,))
+        await db.execute("DELETE FROM effective_configs WHERE instance_uid = ?", (uid_hex,))
+        await db.execute("DELETE FROM config_pushes WHERE instance_uid = ?", (uid_hex,))
+        await db.execute("DELETE FROM agents WHERE instance_uid = ?", (uid_hex,))
+        await db.commit()
+
+
 async def load_all_push_states() -> list[dict]:
     """Load in-flight push states for registry hydration on server startup.
 

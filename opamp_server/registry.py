@@ -85,6 +85,15 @@ class AgentRegistry:
         async with self._lock:
             return len(self._agents)
 
+    async def remove(self, uid: bytes) -> None:
+        """Remove an agent from the registry. No-op if not found.
+
+        Args:
+            uid: Raw 16-byte instance_uid to remove.
+        """
+        async with self._lock:
+            self._agents.pop(uid, None)
+
     async def set_push_state(
         self,
         uid: bytes,
