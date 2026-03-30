@@ -1,18 +1,20 @@
 import { http, HttpResponse } from 'msw'
 import type { CollectorSummary, CollectorDetail } from '@/api/types'
 
-const mockCollectors: CollectorSummary[] = [
+const mockCollectors: (CollectorSummary & { resource_attributes: Record<string, string> })[] = [
   {
     instance_uid: 'aabbccddeeff00112233445566778899',
     last_seen: Date.now() * 1_000_000,
     health_status: 'healthy',
     capabilities: 19463,
+    resource_attributes: { 'host.name': 'web-01', 'os.type': 'linux' },
   },
   {
     instance_uid: 'bbccddeeff001122334455667788990a',
     last_seen: (Date.now() - 60000) * 1_000_000,
     health_status: 'degraded',
     capabilities: 19463,
+    resource_attributes: { 'host.name': 'web-02' },
   },
 ]
 
@@ -49,6 +51,10 @@ const mockCollectorDetail: CollectorDetail = {
 export const handlers = [
   http.get('/api/v1/collectors', () => {
     return HttpResponse.json(mockCollectors)
+  }),
+
+  http.get('/api/v1/collectors/attrs/keys', () => {
+    return HttpResponse.json({ keys: ['host.name', 'os.type'] })
   }),
 
   http.get('/api/v1/collectors/:id', ({ params }) => {
