@@ -102,3 +102,133 @@ class TestHealthSnapshotRetention:
             ) as cursor:
                 count = (await cursor.fetchone())[0]
         assert count <= 3
+
+
+# ---------------------------------------------------------------------------
+# Phase 9 stubs — resource attribute persistence (COLS-01, COLS-02, COLS-03)
+# ---------------------------------------------------------------------------
+
+
+class TestResourceAttrs:
+    async def test_upsert_resource_attrs_inserts_rows(self, tmp_path, monkeypatch):
+        """COLS-01: upsert_resource_attrs writes key/value rows to agent_resource_attrs."""
+        import time
+        import aiosqlite
+        monkeypatch.setenv("OPAMP_DB_PATH", str(tmp_path / "test.db"))
+        from importlib import reload
+        import opamp_server.config as cfg
+        reload(cfg)
+        from opamp_server import persistence
+        from opamp_server.registry import AgentRecord
+
+        await persistence.init_db()
+        uid = b"\x01" * 16
+        now = time.time_ns()
+        await persistence.upsert_agent(AgentRecord(
+            instance_uid=uid, first_seen=now, last_seen=now,
+            capabilities=0, sequence_num=0,
+        ))
+        await persistence.upsert_resource_attrs(uid, {"host.name": "web-01", "os.type": "linux"})
+
+        async with aiosqlite.connect(str(tmp_path / "test.db")) as db:
+            async with db.execute(
+                "SELECT key, value FROM agent_resource_attrs WHERE instance_uid = ? ORDER BY key",
+                (uid.hex(),),
+            ) as cursor:
+                rows = await cursor.fetchall()
+        assert len(rows) == 2
+        assert rows[0] == ("host.name", "web-01")
+        assert rows[1] == ("os.type", "linux")
+
+    async def test_upsert_resource_attrs_updates_existing_key(self, tmp_path, monkeypatch):
+        """COLS-01: upsert_resource_attrs overwrites existing key with new value."""
+        import time
+        import aiosqlite
+        monkeypatch.setenv("OPAMP_DB_PATH", str(tmp_path / "test.db"))
+        from importlib import reload
+        import opamp_server.config as cfg
+        reload(cfg)
+        from opamp_server import persistence
+        from opamp_server.registry import AgentRecord
+
+        await persistence.init_db()
+        uid = b"\x01" * 16
+        now = time.time_ns()
+        await persistence.upsert_agent(AgentRecord(
+            instance_uid=uid, first_seen=now, last_seen=now,
+            capabilities=0, sequence_num=0,
+        ))
+        await persistence.upsert_resource_attrs(uid, {"host.name": "web-01"})
+        await persistence.upsert_resource_attrs(uid, {"host.name": "web-02"})
+
+        async with aiosqlite.connect(str(tmp_path / "test.db")) as db:
+            async with db.execute(
+                "SELECT key, value FROM agent_resource_attrs WHERE instance_uid = ? AND key = 'host.name'",
+                (uid.hex(),),
+            ) as cursor:
+                rows = await cursor.fetchall()
+        assert len(rows) == 1
+        assert rows[0] == ("host.name", "web-02")
+
+    async def test_get_all_resource_attr_keys_returns_distinct_keys(self, tmp_path, monkeypatch):
+        """COLS-03: get_all_resource_attr_keys returns sorted unique keys across all agents."""
+        import time
+        monkeypatch.setenv("OPAMP_DB_PATH", str(tmp_path / "test.db"))
+        from importlib import reload
+        import opamp_server.config as cfg
+        reload(cfg)
+        from opamp_server import persistence
+        from opamp_server.registry import AgentRecord
+
+        await persistence.init_db()
+        now = time.time_ns()
+        uid1 = b"\x01" * 16
+        uid2 = b"\x02" * 16
+        for uid in (uid1, uid2):
+            await persistence.upsert_agent(AgentRecord(
+                instance_uid=uid, first_seen=now, last_seen=now,
+                capabilities=0, sequence_num=0,
+            ))
+        await persistence.upsert_resource_attrs(uid1, {"host.name": "web-01", "os.type": "linux"})
+        await persistence.upsert_resource_attrs(uid2, {"host.name": "web-02", "env": "prod"})
+
+        keys = await persistence.get_all_resource_attr_keys()
+        assert keys == ["env", "host.name", "os.type"]
+
+    async def test_get_all_resource_attr_keys_empty_db(self, tmp_path, monkeypatch):
+        """COLS-03: get_all_resource_attr_keys returns [] when no attrs stored."""
+        monkeypatch.setenv("OPAMP_DB_PATH", str(tmp_path / "test.db"))
+        from importlib import reload
+        import opamp_server.config as cfg
+        reload(cfg)
+        from opamp_server import persistence
+
+        await persistence.init_db()
+        keys = await persistence.get_all_resource_attr_keys()
+        assert keys == []
+
+    async def test_get_resource_attrs_for_agents_batch(self, tmp_path, monkeypatch):
+        """COLS-02: get_resource_attrs_for_agents returns dict mapping hex uid to attrs dict."""
+        import time
+        monkeypatch.setenv("OPAMP_DB_PATH", str(tmp_path / "test.db"))
+        from importlib import reload
+        import opamp_server.config as cfg
+        reload(cfg)
+        from opamp_server import persistence
+        from opamp_server.registry import AgentRecord
+
+        await persistence.init_db()
+        now = time.time_ns()
+        uid1 = b"\x01" * 16
+        uid2 = b"\x02" * 16
+        for uid in (uid1, uid2):
+            await persistence.upsert_agent(AgentRecord(
+                instance_uid=uid, first_seen=now, last_seen=now,
+                capabilities=0, sequence_num=0,
+            ))
+        await persistence.upsert_resource_attrs(uid1, {"host.name": "web-01", "os.type": "linux"})
+        await persistence.upsert_resource_attrs(uid2, {"host.name": "web-02"})
+
+        result = await persistence.get_resource_attrs_for_agents([uid1.hex(), uid2.hex()])
+        assert result[uid1.hex()] == {"host.name": "web-01", "os.type": "linux"}
+        assert result[uid2.hex()] == {"host.name": "web-02"}

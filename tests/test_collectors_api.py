@@ -175,3 +175,76 @@ async def test_get_collector_detail_push_status_reflects_registry(async_client, 
     assert response.status_code == 200
     data = response.json()
     assert data["push_status"]["push_state"] == "PUSH_PENDING"
+
+
+# ---------------------------------------------------------------------------
+# Phase 9 stubs — resource attributes in list endpoint (COLS-02, COLS-03)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_list_collectors_includes_resource_attributes(async_client, registered_agent_uid):
+    """COLS-02: GET /api/v1/collectors includes resource_attributes dict per collector."""
+    from opamp_server import persistence
+    await persistence.upsert_resource_attrs(
+        registered_agent_uid, {"host.name": "web-01", "os.type": "linux"}
+    )
+    response = await async_client.get("/api/v1/collectors")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert "resource_attributes" in data[0]
+    assert data[0]["resource_attributes"] == {"host.name": "web-01", "os.type": "linux"}
+
+
+@pytest.mark.asyncio
+async def test_list_collectors_resource_attributes_empty_when_none(async_client, registered_agent_uid):
+    """COLS-02: GET /api/v1/collectors returns resource_attributes={} when no attrs stored."""
+    response = await async_client.get("/api/v1/collectors")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["resource_attributes"] == {}
+
+
+@pytest.mark.asyncio
+async def test_attrs_keys_returns_distinct_keys(async_client, registered_agent_uid):
+    """COLS-03: GET /api/v1/collectors/attrs/keys returns sorted unique keys."""
+    from opamp_server import persistence
+    uid2 = b"\x02" * 16
+    from opamp_server.registry import AgentRecord
+    import time
+    now = time.time_ns()
+    record2 = AgentRecord(
+        instance_uid=uid2,
+        first_seen=now, last_seen=now,
+        capabilities=0x4807, sequence_num=1,
+    )
+    await async_client.app.state.registry.upsert(record2)
+    await persistence.upsert_resource_attrs(
+        registered_agent_uid, {"host.name": "web-01", "os.type": "linux"}
+    )
+    await persistence.upsert_resource_attrs(uid2, {"host.name": "web-02", "env": "prod"})
+
+    response = await async_client.get("/api/v1/collectors/attrs/keys")
+    assert response.status_code == 200
+    body = response.json()
+    assert "keys" in body
+    assert body["keys"] == ["env", "host.name", "os.type"]
+
+
+@pytest.mark.asyncio
+async def test_attrs_keys_empty_when_no_attrs(async_client):
+    """COLS-03: GET /api/v1/collectors/attrs/keys returns {keys: []} when no attrs exist."""
+    response = await async_client.get("/api/v1/collectors/attrs/keys")
+    assert response.status_code == 200
+    body = response.json()
+    assert body == {"keys": []}
+
+
+@pytest.mark.asyncio
+async def test_attrs_keys_route_not_consumed_by_collector_id(async_client):
+    """COLS-03: attrs/keys route returns 200 JSON, not 400 from hex-parse of 'attrs'."""
+    response = await async_client.get("/api/v1/collectors/attrs/keys")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/json")

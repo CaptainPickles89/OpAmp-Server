@@ -138,3 +138,74 @@ class TestErrorResponses:
         msg = opamp.ServerToAgent()
         msg.ParseFromString(response.content)
         assert msg.HasField("error_response")
+
+
+# ---------------------------------------------------------------------------
+# Phase 9 stubs — handler extracts non_identifying_attributes (COLS-01)
+# ---------------------------------------------------------------------------
+
+
+class TestResourceAttrExtraction:
+    async def test_handler_extracts_resource_attrs_from_agent_description(
+        self, async_client, tmp_path
+    ):
+        """COLS-01: Handler writes non_identifying_attributes to agent_resource_attrs table."""
+        import aiosqlite
+        import opamp_pb2 as opamp
+
+        msg = opamp.AgentToServer()
+        msg.instance_uid = b"\xaa" * 16
+        msg.sequence_num = 1
+        msg.capabilities = 0x805
+        kv1 = msg.agent_description.non_identifying_attributes.add()
+        kv1.key = "host.name"
+        kv1.value.string_value = "web-01"
+        kv2 = msg.agent_description.non_identifying_attributes.add()
+        kv2.key = "os.type"
+        kv2.value.string_value = "linux"
+
+        response = await async_client.post(
+            "/v1/opamp",
+            content=msg.SerializeToString(),
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+        assert response.status_code == 200
+
+        db_path = async_client.app.state.db_path  # type: ignore[attr-defined]
+        async with aiosqlite.connect(db_path) as db:
+            async with db.execute(
+                "SELECT key, value FROM agent_resource_attrs WHERE instance_uid = ? ORDER BY key",
+                (b"\xaa" * 16).hex(),
+            ) as cursor:
+                rows = await cursor.fetchall()
+        assert len(rows) == 2
+        assert ("host.name", "web-01") in rows
+        assert ("os.type", "linux") in rows
+
+    async def test_handler_ignores_empty_agent_description(self, async_client, tmp_path):
+        """COLS-01: Handler writes no rows when non_identifying_attributes is empty."""
+        import aiosqlite
+        import opamp_pb2 as opamp
+
+        msg = opamp.AgentToServer()
+        msg.instance_uid = b"\xbb" * 16
+        msg.sequence_num = 1
+        msg.capabilities = 0x805
+        # agent_description present but non_identifying_attributes empty
+        msg.agent_description.SetInParent()
+
+        response = await async_client.post(
+            "/v1/opamp",
+            content=msg.SerializeToString(),
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+        assert response.status_code == 200
+
+        db_path = async_client.app.state.db_path  # type: ignore[attr-defined]
+        async with aiosqlite.connect(db_path) as db:
+            async with db.execute(
+                "SELECT COUNT(*) FROM agent_resource_attrs WHERE instance_uid = ?",
+                (b"\xbb" * 16).hex(),
+            ) as cursor:
+                count = (await cursor.fetchone())[0]
+        assert count == 0

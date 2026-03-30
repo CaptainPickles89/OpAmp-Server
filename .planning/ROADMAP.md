@@ -72,7 +72,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 08-01-PLAN.md — Core purge logic: settings, registry.remove, persistence.purge_agent, purger.run_purge_sweep + tests
-- [ ] 08-02-PLAN.md — Lifecycle wiring: background task launch on startup, cancellation on shutdown
+- [x] 08-02-PLAN.md — Lifecycle wiring: background task launch on startup, cancellation on shutdown
 **UI hint**: no
 
 ### Phase 9: Dynamic Resource Attribute Columns
@@ -85,7 +85,13 @@ Plans:
   3. Column picker selections survive a browser refresh — reopening the page restores the same column configuration the operator last set
   4. Connecting a new collector that reports a previously unseen resource attribute key (e.g. `deployment.environment`) causes that key to appear in the column picker on the next poll cycle without any server restart
   5. `GET /api/v1/collectors` returns a `resource_attributes` dict per collector alongside existing fields; existing API consumers are not broken
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 09-00-PLAN.md — Wave 0: failing test stubs (backend + frontend) for all COLS requirements
+- [ ] 09-01-PLAN.md — Wave 1: DB migration (agent_resource_attrs table), persistence functions, handler extraction
+- [ ] 09-02-PLAN.md — Wave 2: API endpoints (attrs/keys + extend list_collectors), Zod types, API client
+- [ ] 09-03-PLAN.md — Wave 3: useResourceAttrKeys hook, useColumnPrefs hook, ColumnPicker component
+- [ ] 09-04-PLAN.md — Wave 4: CollectorListPage integration (dynamic grid, resource attr cells, ColumnPicker wiring)
 **UI hint**: yes
 
 ## Progress
@@ -100,4 +106,4 @@ Plans:
 | 6. Frontend Quick Wins | v1.1 | 3/3 | Complete   | 2026-03-30 |
 | 7. Status Landing Page | v1.1 | 2/2 | Complete   | 2026-03-30 |
 | 8. Stale Collector TTL Purge | v1.1 | 1/2 | In Progress|  |
-| 9. Dynamic Resource Attribute Columns | v1.1 | 0/? | Not started | - |
+| 9. Dynamic Resource Attribute Columns | v1.1 | 0/5 | Not started | - |
