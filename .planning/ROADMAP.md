@@ -21,7 +21,7 @@
 ### v1.1 Operator UX
 
 - [x] **Phase 6: Frontend Quick Wins** — Config pre-populate, capability chips, enriched example config (completed 2026-03-30)
-- [ ] **Phase 7: Status Landing Page** — New route with live agent health counts and OTel hero
+- [x] **Phase 7: Status Landing Page** — New route with live agent health counts and OTel hero (completed 2026-03-30)
 - [ ] **Phase 8: Stale Collector TTL Purge** — Background auto-purge with push-state guard
 - [ ] **Phase 9: Dynamic Resource Attribute Columns** — Column picker with dynamic attribute discovery
 
@@ -56,7 +56,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 07-01-PLAN.md — Backend stats endpoint + frontend data layer (Zod schema, API client, useStats hook, MSW mock)
-- [ ] 07-02-PLAN.md — StatusPage UI (hero, stat card, routing, nav link) + frontend tests
+- [x] 07-02-PLAN.md — StatusPage UI (hero, stat card, routing, nav link) + frontend tests
 **UI hint**: yes
 
 ### Phase 8: Stale Collector TTL Purge
@@ -94,6 +94,6 @@ Plans:
 | 4. React Management UI | v1.0 | 5/5 | Complete | 2026-03-27 |
 | 5. Docker Compose Integration | v1.0 | 2/2 | Complete | 2026-03-27 |
 | 6. Frontend Quick Wins | v1.1 | 3/3 | Complete   | 2026-03-30 |
-| 7. Status Landing Page | v1.1 | 1/2 | In Progress|  |
+| 7. Status Landing Page | v1.1 | 2/2 | Complete   | 2026-03-30 |
 | 8. Stale Collector TTL Purge | v1.1 | 0/? | Not started | - |
 | 9. Dynamic Resource Attribute Columns | v1.1 | 0/? | Not started | - |

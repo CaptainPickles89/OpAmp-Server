@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Operator UX
-status: executing
-last_updated: "2026-03-30T12:54:33.715Z"
+status: verifying
+last_updated: "2026-03-30T13:01:06.377Z"
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 Milestone: v1.1 Operator UX
 Phase: 07 (status-landing-page) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 
 [██████████] Phase 6: Frontend Quick Wins (3/3 plans complete) 100%
 [          ] Phase 7: Status Landing Page
@@ -36,7 +36,7 @@ Status: Ready to execute
 Progress: 1/4 phases complete (all Phase 6 plans delivered)
 ```
 
-Last session: 2026-03-30T12:54:33.711Z
+Last session: 2026-03-30T13:01:06.373Z
 
 ## Performance Metrics
 
@@ -79,6 +79,12 @@ Last session: 2026-03-30T12:54:33.711Z
 - seededRef guards useEffect to fire only once on first non-empty effective_config arrival; prevents background poll from overwriting in-progress edits
 - handleEditStart fallback retained: refreshes editedYaml to latest effective_config on each re-entry into edit mode
 - ConfigEditor.tsx not modified — parent-level isEditMode ternary is the edit protection guard
+
+### Plan 07-02 Decisions (2026-03-30)
+
+- Active nav detection changed from pathname.startsWith(to) to exact match (pathname === to) — safe because no nav links have sub-routes needing parent highlight; required so Status pill does not stay active on all sub-pages
+- OtelTelescopeIcon SVG duplicated inline in StatusPage — it is a private function in AppLayout and cannot be imported; duplication is the intended approach per plan
+- Brand logo link updated from /collectors to / for consistency with new home page
 
 ### Todos
 

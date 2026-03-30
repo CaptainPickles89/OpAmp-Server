@@ -17,10 +17,10 @@
 
 ### STATUS — Landing Page
 
-- [ ] **STATUS-01**: A "Status" page exists at the `/` route with an OTel logo hero section and gradient background
-- [ ] **STATUS-02**: Status page shows a one-to-two sentence description of what the UI does
+- [x] **STATUS-01**: A "Status" page exists at the `/` route with an OTel logo hero section and gradient background
+- [x] **STATUS-02**: Status page shows a one-to-two sentence description of what the UI does
 - [x] **STATUS-03**: Status page shows a live "X of Y agents healthy" count that updates every 5 seconds
-- [ ] **STATUS-04**: "Status" nav item appears in the app navigation
+- [x] **STATUS-04**: "Status" nav item appears in the app navigation
 
 ### TTL — Stale Collector Purge
 
@@ -73,10 +73,10 @@
 | UI-05 | Phase 6 | Complete |
 | UI-06 | Phase 6 | Complete |
 | UI-07 | Phase 6 | Complete |
-| STATUS-01 | Phase 7 | Pending |
-| STATUS-02 | Phase 7 | Pending |
+| STATUS-01 | Phase 7 | Complete |
+| STATUS-02 | Phase 7 | Complete |
 | STATUS-03 | Phase 7 | Complete |
-| STATUS-04 | Phase 7 | Pending |
+| STATUS-04 | Phase 7 | Complete |
 | TTL-01 | Phase 8 | Pending |
 | TTL-02 | Phase 8 | Pending |
 | TTL-03 | Phase 8 | Pending |
