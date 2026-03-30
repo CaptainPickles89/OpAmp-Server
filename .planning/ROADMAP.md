@@ -88,7 +88,7 @@ Plans:
 **Plans**: 5 plans
 Plans:
 - [x] 09-00-PLAN.md — Wave 0: failing test stubs (backend + frontend) for all COLS requirements
-- [ ] 09-01-PLAN.md — Wave 1: DB migration (agent_resource_attrs table), persistence functions, handler extraction
+- [x] 09-01-PLAN.md — Wave 1: DB migration (agent_resource_attrs table), persistence functions, handler extraction
 - [ ] 09-02-PLAN.md — Wave 2: API endpoints (attrs/keys + extend list_collectors), Zod types, API client
 - [ ] 09-03-PLAN.md — Wave 3: useResourceAttrKeys hook, useColumnPrefs hook, ColumnPicker component
 - [ ] 09-04-PLAN.md — Wave 4: CollectorListPage integration (dynamic grid, resource attr cells, ColumnPicker wiring)
@@ -106,4 +106,4 @@ Plans:
 | 6. Frontend Quick Wins | v1.1 | 3/3 | Complete   | 2026-03-30 |
 | 7. Status Landing Page | v1.1 | 2/2 | Complete   | 2026-03-30 |
 | 8. Stale Collector TTL Purge | v1.1 | 1/2 | In Progress|  |
-| 9. Dynamic Resource Attribute Columns | v1.1 | 1/5 | In Progress|  |
+| 9. Dynamic Resource Attribute Columns | v1.1 | 2/5 | In Progress|  |
