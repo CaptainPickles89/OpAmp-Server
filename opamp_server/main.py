@@ -111,10 +111,11 @@ def create_app() -> FastAPI:
 
     @app.on_event("shutdown")
     async def on_shutdown() -> None:
-        # Cancel purge background task
+        # Cancel purge background task and await it to prevent event loop leaks
         purge_task = getattr(app.state, "purge_task", None)
         if purge_task is not None and not purge_task.done():
             purge_task.cancel()
+            await asyncio.gather(purge_task, return_exceptions=True)
         log.info("opamp_server_stopped")
 
     return app
