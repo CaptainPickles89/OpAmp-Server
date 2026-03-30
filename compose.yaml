@@ -45,6 +45,7 @@ services:
     build:
       context: ./collector
       dockerfile: Dockerfile
+    image: otel/opentelemetry-collector-contrib:0.119.0
     volumes:
       - ./collector/config.compose.yaml:/etc/otelcol-contrib/config.yaml:ro
     depends_on:
