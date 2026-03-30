@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { screen, waitFor, fireEvent } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/mocks/server'
@@ -6,6 +6,10 @@ import { renderWithProviders } from '@/test/renderWithProviders'
 import { CollectorListPage } from '../CollectorListPage'
 
 describe('CollectorListPage', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
   it('renders loading skeleton when isLoading', async () => {
     // Delay the response to catch loading state
     server.use(
@@ -84,5 +88,34 @@ describe('CollectorListPage', () => {
     await waitFor(() => {
       expect(screen.getByText('No collectors match your filters.')).toBeTruthy()
     })
+  })
+
+  it('renders host.name column header by default', async () => {
+    renderWithProviders(<CollectorListPage />)
+    await screen.findByText('web-01')
+    expect(screen.getByText('host.name')).toBeInTheDocument()
+  })
+
+  it('renders resource attribute value from collector data', async () => {
+    renderWithProviders(<CollectorListPage />)
+    await screen.findByText('web-01')
+    // MSW handler returns resource_attributes: { 'host.name': 'web-01' } for first collector
+    const cells = screen.getAllByText('web-01')
+    expect(cells.length).toBeGreaterThan(0)
+  })
+
+  it('renders em dash when attribute is absent for a collector', async () => {
+    // Enable os.type column so the second collector (which has no os.type) shows em dash
+    localStorage.setItem('opamp-column-prefs', JSON.stringify(['host.name', 'os.type']))
+    renderWithProviders(<CollectorListPage />)
+    await screen.findByText('web-01')
+    // Second collector has no os.type value so em dash should appear
+    const dashSpans = document.querySelectorAll('span[aria-label="not available"]')
+    expect(dashSpans.length).toBeGreaterThan(0)
+  })
+
+  it('renders ColumnPicker button in the header', async () => {
+    renderWithProviders(<CollectorListPage />)
+    await screen.findByRole('button', { name: /configure visible columns/i })
   })
 })

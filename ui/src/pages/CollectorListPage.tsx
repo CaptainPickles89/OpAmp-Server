@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCollectors } from '@/hooks/useCollectors'
+import { useResourceAttrKeys } from '@/hooks/useResourceAttrKeys'
+import { useColumnPrefs } from '@/hooks/useColumnPrefs'
+import { ColumnPicker } from '@/components/ColumnPicker'
 import { HealthBadge } from '@/components/HealthBadge'
 import { RelativeTime } from '@/components/RelativeTime'
 import { CapabilityChipList } from '@/components/CapabilityChipList'
@@ -37,8 +40,13 @@ function CollectorTableSkeleton() {
 export function CollectorListPage() {
   const navigate = useNavigate()
   const { data, isLoading, isError, isFetching, refetch } = useCollectors()
+  const { data: attrKeys } = useResourceAttrKeys()
+  const { enabledKeys, toggleKey } = useColumnPrefs()
   const [search, setSearch] = useState('')
   const [healthFilter, setHealthFilter] = useState<HealthStatus | 'all'>('all')
+
+  const totalCols = 4 + enabledKeys.length
+  const gridStyle = { gridTemplateColumns: `repeat(${totalCols}, minmax(120px, 1fr))` }
 
   const filtered = (data ?? []).filter(c => {
     const matchSearch = c.instance_uid.toLowerCase().includes(search.toLowerCase())
@@ -54,6 +62,11 @@ export function CollectorListPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">Collectors</h1>
         <div className="flex items-center gap-2 text-xs text-foreground-subtle">
+          <ColumnPicker
+            allKeys={attrKeys ?? []}
+            enabledKeys={enabledKeys}
+            onToggle={toggleKey}
+          />
           {isFetching && (
             <svg
               className="h-3 w-3 animate-spin"
@@ -144,11 +157,17 @@ export function CollectorListPage() {
       {!isLoading && !isError && filtered.length > 0 && (
         <div className="rounded-lg border border-border overflow-hidden">
           {/* Table header */}
-          <div className="grid grid-cols-4 gap-4 px-4 py-2.5 bg-card text-xs font-medium text-foreground-subtle uppercase tracking-widest border-b border-border">
+          <div
+            className="grid gap-4 px-4 py-2.5 bg-card text-xs font-medium text-foreground-subtle uppercase tracking-widest border-b border-border"
+            style={gridStyle}
+          >
             <span className="text-center">Instance UID</span>
             <span className="text-center">Health</span>
             <span className="text-center">Last Seen</span>
             <span className="text-center">Capabilities</span>
+            {enabledKeys.map(key => (
+              <span key={key} className="text-center">{key}</span>
+            ))}
           </div>
           {/* Rows */}
           {filtered.map(collector => (
@@ -156,7 +175,8 @@ export function CollectorListPage() {
               key={collector.instance_uid}
               role="row"
               onClick={() => navigate(`/collectors/${collector.instance_uid}`)}
-              className="grid grid-cols-4 gap-4 px-4 py-3 border-t border-border cursor-pointer hover:bg-hover transition-colors items-center group"
+              className="grid gap-4 px-4 py-3 border-t border-border cursor-pointer hover:bg-hover transition-colors items-center group"
+              style={gridStyle}
             >
               <span
                 className="font-mono text-sm text-foreground-secondary group-hover:text-foreground truncate text-center transition-colors"
@@ -173,6 +193,13 @@ export function CollectorListPage() {
               <span className="flex justify-center">
                 <CapabilityChipList capabilities={collector.capabilities} />
               </span>
+              {enabledKeys.map(key => (
+                <span key={key} className="text-sm text-center truncate">
+                  {collector.resource_attributes[key] ?? (
+                    <span className="text-foreground-subtle" aria-label="not available">{'\u2014'}</span>
+                  )}
+                </span>
+              ))}
             </div>
           ))}
         </div>
