@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useCollector, usePushConfig } from '@/hooks/useCollector'
 import { HealthBadge } from '@/components/HealthBadge'
@@ -53,6 +53,17 @@ export function CollectorDetailPage() {
   const [conflictError, setConflictError] = useState<string | null>(null)
   const [applyingStart, setApplyingStart] = useState<number | null>(null)
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
+
+  // Pre-seed editedYaml on first effective_config arrival (UI-01)
+  const seededRef = useRef(false)
+
+  useEffect(() => {
+    if (seededRef.current) return
+    const yaml = extractYaml(collector?.effective_config ?? null)
+    if (!yaml) return
+    setEditedYaml(yaml)
+    seededRef.current = true
+  }, [collector?.effective_config])
 
   // Track APPLYING start time for timeout warning
   useEffect(() => {
