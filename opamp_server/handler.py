@@ -32,6 +32,22 @@ router = APIRouter()
 log = structlog.get_logger(__name__)
 
 
+def _extract_string_attrs(kvs) -> dict[str, str]:
+    """Extract resource attributes from repeated KeyValue, coercing to str.
+
+    Handles all AnyValue oneof cases: string values are stored directly,
+    other types (int, double, bool, bytes) are coerced via str().
+    """
+    result: dict[str, str] = {}
+    for kv in kvs:
+        which = kv.value.WhichOneof("value")
+        if which == "string_value":
+            result[kv.key] = kv.value.string_value
+        elif which is not None:
+            result[kv.key] = str(getattr(kv.value, which))
+    return result
+
+
 @router.post("/v1/opamp")
 @limiter.limit(settings.rate_limit)
 async def opamp_handler(request: Request) -> Response:
@@ -134,6 +150,16 @@ async def opamp_handler(request: Request) -> Response:
                 config_data={},  # simplified — store hash only for Phase 1
             )
         )
+
+    # Store resource attributes from AgentDescription (COLS-01)
+    if msg.HasField("agent_description"):
+        attrs = _extract_string_attrs(
+            msg.agent_description.non_identifying_attributes
+        )
+        if attrs:
+            asyncio.ensure_future(
+                persistence.upsert_resource_attrs(agent_uid, attrs)
+            )
 
     # Process RemoteConfigStatus from incoming message (CFGMG-03 / CFGMG-04)
     if msg.HasField("remote_config_status") and msg.remote_config_status.status != 0:

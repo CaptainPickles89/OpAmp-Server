@@ -1,6 +1,8 @@
 """Integration tests for the /v1/opamp handler endpoint."""
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 import opamp_pb2 as opamp
 
@@ -170,12 +172,20 @@ class TestResourceAttrExtraction:
             headers={"Content-Type": "application/x-protobuf"},
         )
         assert response.status_code == 200
+        # Wait for fire-and-forget upsert_resource_attrs (thread-backed aiosqlite) to complete.
+        pending = [
+            t for t in asyncio.all_tasks()
+            if t is not asyncio.current_task()
+            and "upsert_resource_attrs" in str(t.get_coro())
+        ]
+        if pending:
+            await asyncio.wait(pending, timeout=1.0)
 
         db_path = async_client.app.state.db_path  # type: ignore[attr-defined]
         async with aiosqlite.connect(db_path) as db:
             async with db.execute(
                 "SELECT key, value FROM agent_resource_attrs WHERE instance_uid = ? ORDER BY key",
-                (b"\xaa" * 16).hex(),
+                ((b"\xaa" * 16).hex(),),
             ) as cursor:
                 rows = await cursor.fetchall()
         assert len(rows) == 2
@@ -205,7 +215,7 @@ class TestResourceAttrExtraction:
         async with aiosqlite.connect(db_path) as db:
             async with db.execute(
                 "SELECT COUNT(*) FROM agent_resource_attrs WHERE instance_uid = ?",
-                (b"\xbb" * 16).hex(),
+                ((b"\xbb" * 16).hex(),),
             ) as cursor:
                 count = (await cursor.fetchone())[0]
         assert count == 0

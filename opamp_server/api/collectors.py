@@ -27,6 +27,7 @@ class CollectorSummary(BaseModel):
     last_seen: int
     health_status: str
     capabilities: int
+    resource_attributes: dict[str, str] = {}
 
 
 class HealthSnapshot(BaseModel):
@@ -103,9 +104,10 @@ async def list_collectors(request: Request) -> JSONResponse:
     if not agents:
         return JSONResponse(status_code=200, content=[])
 
-    # Batch-fetch latest health snapshot per agent (single SQL query)
+    # Batch-fetch latest health snapshot and resource attributes per agent (single SQL query each)
     uid_hexes = [a.instance_uid.hex() for a in agents]
     health_map = await persistence.get_latest_health_statuses(uid_hexes)
+    resource_attrs_map = await persistence.get_resource_attrs_for_agents(uid_hexes)
 
     result = []
     for agent in agents:
@@ -116,10 +118,23 @@ async def list_collectors(request: Request) -> JSONResponse:
             "last_seen": agent.last_seen,
             "health_status": _derive_health_status(snapshot),
             "capabilities": agent.capabilities,
+            "resource_attributes": resource_attrs_map.get(uid_hex, {}),
         })
 
     log.info("collectors_listed", count=len(result))
     return JSONResponse(status_code=200, content=result)
+
+
+@router.get("/collectors/attrs/keys")
+async def list_attr_keys() -> JSONResponse:
+    """Return all distinct resource attribute keys across all collectors, sorted.
+
+    Returns:
+        200 OK with JSON object containing a 'keys' list of sorted unique key strings.
+        Example: {"keys": ["env", "host.name", "os.type"]}
+    """
+    keys = await persistence.get_all_resource_attr_keys()
+    return JSONResponse(status_code=200, content={"keys": keys})
 
 
 @router.get("/collectors/{collector_id}", response_model=CollectorDetail)

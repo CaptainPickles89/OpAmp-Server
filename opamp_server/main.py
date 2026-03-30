@@ -7,6 +7,8 @@ import structlog
 from fastapi import FastAPI, Request, Response
 from slowapi.errors import RateLimitExceeded
 
+import opamp_server.config as _cfg_module
+
 from opamp_server.api import api_router
 from opamp_server.config import settings
 from opamp_server.handler import router
@@ -58,9 +60,11 @@ def create_app() -> FastAPI:
         version="0.1.0",
     )
 
-    # State for slowapi and registry
+    # State for slowapi, registry, and db path (db_path exposed for test introspection)
+    # Use _cfg_module.settings (module attribute) so post-reload changes are reflected.
     app.state.limiter = limiter
     app.state.registry = registry
+    app.state.db_path = _cfg_module.settings.db_path
 
     # Register custom rate limit handler (returns binary protobuf, not JSON)
     app.add_exception_handler(RateLimitExceeded, _opamp_rate_limit_handler)
