@@ -1,6 +1,8 @@
 """FastAPI application factory for the OpAMP server."""
 from __future__ import annotations
 
+import asyncio
+
 import structlog
 from fastapi import FastAPI, Request, Response
 from slowapi.errors import RateLimitExceeded
@@ -13,6 +15,7 @@ from opamp_server.logging_config import configure_logging
 from opamp_server.middleware import MaxBodySizeMiddleware
 from opamp_server.persistence import init_db, load_all_agents, load_all_push_states
 from opamp_server.protocol import ERROR_TYPE_UNAVAILABLE, build_error_response
+from opamp_server.purger import start_purge_loop
 from opamp_server.registry import AgentRegistry
 
 PROTOBUF_CONTENT_TYPE = "application/x-protobuf"
@@ -92,6 +95,13 @@ def create_app() -> FastAPI:
         )
 
         agent_count = await registry.count()
+
+        # Launch TTL purge background loop
+        app.state.purge_task = asyncio.create_task(
+            start_purge_loop(registry)
+        )
+        log.info("purge_loop_started", ttl_hours=settings.collector_ttl_hours)
+
         log.info(
             "opamp_server_started",
             host=settings.host,
@@ -101,6 +111,10 @@ def create_app() -> FastAPI:
 
     @app.on_event("shutdown")
     async def on_shutdown() -> None:
+        # Cancel purge background task
+        purge_task = getattr(app.state, "purge_task", None)
+        if purge_task is not None and not purge_task.done():
+            purge_task.cancel()
         log.info("opamp_server_stopped")
 
     return app
