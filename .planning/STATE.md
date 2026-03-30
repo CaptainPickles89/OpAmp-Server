@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Operator UX
-status: verifying
-last_updated: "2026-03-30T13:01:06.377Z"
+status: executing
+last_updated: "2026-03-30T13:44:20.446Z"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 7
+  completed_plans: 6
 ---
 
 # Project State
@@ -18,15 +18,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Operators can see which collectors are connected, understand their health, and safely push config changes — all from a browser.
-**Current focus:** Phase 07 — status-landing-page
+**Current focus:** Phase 08 — stale-collector-ttl-purge
 
 ## Current Position
 
 ```
 Milestone: v1.1 Operator UX
-Phase: 07 (status-landing-page) — EXECUTING
+Phase: 08 (stale-collector-ttl-purge) — EXECUTING
 Plan: 2 of 2
-Status: Phase complete — ready for verification
+Status: Ready to execute
 
 [██████████] Phase 6: Frontend Quick Wins (3/3 plans complete) 100%
 [          ] Phase 7: Status Landing Page
@@ -36,7 +36,7 @@ Status: Phase complete — ready for verification
 Progress: 1/4 phases complete (all Phase 6 plans delivered)
 ```
 
-Last session: 2026-03-30T13:01:06.373Z
+Last session: 2026-03-30T13:44:20.442Z
 
 ## Performance Metrics
 

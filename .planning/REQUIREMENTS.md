@@ -24,11 +24,11 @@
 
 ### TTL — Stale Collector Purge
 
-- [ ] **TTL-01**: Server auto-purges collectors from DB and in-memory registry when `last_seen` exceeds the TTL threshold
-- [ ] **TTL-02**: TTL is configurable via `OPAMP_COLLECTOR_TTL_HOURS` env var, default 24
+- [x] **TTL-01**: Server auto-purges collectors from DB and in-memory registry when `last_seen` exceeds the TTL threshold
+- [x] **TTL-02**: TTL is configurable via `OPAMP_COLLECTOR_TTL_HOURS` env var, default 24
 - [ ] **TTL-03**: Purge sweep runs as a background task launched at startup, recurring on a schedule
-- [ ] **TTL-04**: A structured log entry is written for each purged collector
-- [ ] **TTL-05**: Collectors with an active config push (`PUSH_PENDING` or `APPLYING`) are not purged
+- [x] **TTL-04**: A structured log entry is written for each purged collector
+- [x] **TTL-05**: Collectors with an active config push (`PUSH_PENDING` or `APPLYING`) are not purged
 
 ### COLS — Dynamic Resource Attribute Columns
 
@@ -77,11 +77,11 @@
 | STATUS-02 | Phase 7 | Complete |
 | STATUS-03 | Phase 7 | Complete |
 | STATUS-04 | Phase 7 | Complete |
-| TTL-01 | Phase 8 | Pending |
-| TTL-02 | Phase 8 | Pending |
+| TTL-01 | Phase 8 | Complete |
+| TTL-02 | Phase 8 | Complete |
 | TTL-03 | Phase 8 | Pending |
-| TTL-04 | Phase 8 | Pending |
-| TTL-05 | Phase 8 | Pending |
+| TTL-04 | Phase 8 | Complete |
+| TTL-05 | Phase 8 | Complete |
 | COLS-01 | Phase 9 | Pending |
 | COLS-02 | Phase 9 | Pending |
 | COLS-03 | Phase 9 | Pending |

@@ -71,7 +71,7 @@ Plans:
   5. A collector with an active config push (`PUSH_PENDING` or `APPLYING` state) is not purged during the sweep, even if its `last_seen` timestamp has exceeded the TTL
 **Plans**: 2 plans
 Plans:
-- [ ] 08-01-PLAN.md — Core purge logic: settings, registry.remove, persistence.purge_agent, purger.run_purge_sweep + tests
+- [x] 08-01-PLAN.md — Core purge logic: settings, registry.remove, persistence.purge_agent, purger.run_purge_sweep + tests
 - [ ] 08-02-PLAN.md — Lifecycle wiring: background task launch on startup, cancellation on shutdown
 **UI hint**: no
 
@@ -99,5 +99,5 @@ Plans:
 | 5. Docker Compose Integration | v1.0 | 2/2 | Complete | 2026-03-27 |
 | 6. Frontend Quick Wins | v1.1 | 3/3 | Complete   | 2026-03-30 |
 | 7. Status Landing Page | v1.1 | 2/2 | Complete   | 2026-03-30 |
-| 8. Stale Collector TTL Purge | v1.1 | 0/2 | Not started | - |
+| 8. Stale Collector TTL Purge | v1.1 | 1/2 | In Progress|  |
 | 9. Dynamic Resource Attribute Columns | v1.1 | 0/? | Not started | - |
