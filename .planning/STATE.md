@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Operator UX
 status: verifying
-last_updated: "2026-03-30T15:39:35.652Z"
+last_updated: "2026-03-30T15:46:00Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 12
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State
@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ```
 Milestone: v1.1 Operator UX
 Phase: 9
-Plan: Not started
-Status: Phase complete — ready for verification
+Plan: 2 complete (09-02)
+Status: In progress — Wave 2 complete, Wave 3 (hooks + components) next
 
 [██████████] Phase 6: Frontend Quick Wins (3/3 plans complete) 100%
 [          ] Phase 7: Status Landing Page
@@ -36,7 +36,8 @@ Status: Phase complete — ready for verification
 Progress: 1/4 phases complete (all Phase 6 plans delivered)
 ```
 
-Last session: 2026-03-30T15:39:35.648Z
+Last session: 2026-03-30T15:46:00Z
+Stopped at: Completed 09-02-PLAN.md
 
 ## Performance Metrics
 
@@ -91,6 +92,12 @@ Last session: 2026-03-30T15:39:35.648Z
 - Store asyncio.Task in app.state.purge_task to prevent GC of unawaited background tasks; app.state is canonical FastAPI per-app mutable state store
 - Use getattr(app.state, "purge_task", None) in shutdown — safe guard when startup fails partway through before reaching create_task
 - sleep-first design of start_purge_loop (Plan 01) means no purge fires on server restart — safe for rolling deploys
+
+### Plan 09-02 Decisions (2026-03-30)
+
+- Task 1 (API endpoints) was pre-implemented by 09-01 Wave 1 deviation — all three changes (CollectorSummary.resource_attributes, attrs/keys route, attrs_map fetch) were already present and tested green
+- ResourceAttrKeysSchema uses .default({}) on resource_attributes for backward-compatible Zod parsing
+- fetchResourceAttrKeys returns string[] (unwrapped from {keys: []}) to simplify consumption in hooks
 
 ### Todos
 
