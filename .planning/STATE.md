@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Operator UX
-status: executing
-last_updated: "2026-03-30T13:44:20.446Z"
+status: verifying
+last_updated: "2026-03-30T14:56:26.591Z"
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 7
-  completed_plans: 6
+  completed_phases: 3
+  total_plans: 12
+  completed_plans: 8
 ---
 
 # Project State
@@ -24,9 +24,9 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ```
 Milestone: v1.1 Operator UX
-Phase: 08 (stale-collector-ttl-purge) — EXECUTING
-Plan: 2 of 2
-Status: Ready to execute
+Phase: 9
+Plan: Not started
+Status: Phase complete — ready for verification
 
 [██████████] Phase 6: Frontend Quick Wins (3/3 plans complete) 100%
 [          ] Phase 7: Status Landing Page
@@ -36,7 +36,7 @@ Status: Ready to execute
 Progress: 1/4 phases complete (all Phase 6 plans delivered)
 ```
 
-Last session: 2026-03-30T13:44:20.442Z
+Last session: 2026-03-30T14:56:26.587Z
 
 ## Performance Metrics
 
@@ -85,6 +85,12 @@ Last session: 2026-03-30T13:44:20.442Z
 - Active nav detection changed from pathname.startsWith(to) to exact match (pathname === to) — safe because no nav links have sub-routes needing parent highlight; required so Status pill does not stay active on all sub-pages
 - OtelTelescopeIcon SVG duplicated inline in StatusPage — it is a private function in AppLayout and cannot be imported; duplication is the intended approach per plan
 - Brand logo link updated from /collectors to / for consistency with new home page
+
+### Plan 08-02 Decisions (2026-03-30)
+
+- Store asyncio.Task in app.state.purge_task to prevent GC of unawaited background tasks; app.state is canonical FastAPI per-app mutable state store
+- Use getattr(app.state, "purge_task", None) in shutdown — safe guard when startup fails partway through before reaching create_task
+- sleep-first design of start_purge_loop (Plan 01) means no purge fires on server restart — safe for rolling deploys
 
 ### Todos
 
