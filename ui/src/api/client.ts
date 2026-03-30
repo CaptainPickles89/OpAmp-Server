@@ -1,5 +1,5 @@
-import type { CollectorSummary, CollectorDetail } from './types'
-import { CollectorSummarySchema, CollectorDetailSchema, PushStatusSchema } from './types'
+import type { CollectorSummary, CollectorDetail, Stats } from './types'
+import { CollectorSummarySchema, CollectorDetailSchema, PushStatusSchema, StatsSchema } from './types'
 import type { PushStatus } from './types'
 
 class ApiError extends Error {
@@ -40,6 +40,11 @@ export async function pushConfig(id: string, yaml: string): Promise<PushStatus> 
     body: yaml,
   })
   return PushStatusSchema.parse(data)
+}
+
+export async function fetchStats(): Promise<Stats> {
+  const data = await request<unknown>('/api/v1/stats')
+  return StatsSchema.parse(data)
 }
 
 export { ApiError }

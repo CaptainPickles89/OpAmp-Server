@@ -68,4 +68,8 @@ export const handlers = [
       { status: 202 },
     )
   }),
+
+  http.get('/api/v1/stats', () => {
+    return HttpResponse.json({ healthy_count: 1, total_count: 2 })
+  }),
 ]

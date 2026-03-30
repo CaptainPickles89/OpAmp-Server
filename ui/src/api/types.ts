@@ -55,6 +55,13 @@ export type EffectiveConfig = z.infer<typeof EffectiveConfigSchema>
 export type PushStatus = z.infer<typeof PushStatusSchema>
 export type CollectorDetail = z.infer<typeof CollectorDetailSchema>
 
+export const StatsSchema = z.object({
+  healthy_count: z.number(),
+  total_count: z.number(),
+})
+
+export type Stats = z.infer<typeof StatsSchema>
+
 // --- Utility ---
 
 export function extractYaml(config: EffectiveConfig | null): string {
