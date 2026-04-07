@@ -1,4 +1,7 @@
 # OpAMP Server
+<p>
+    <img src="https://skills-icons.vercel.app/api/icons?i=docker,otel,fastapi,python,react" />
+</p>
 
 A spec-compliant [CNCF OpAMP](https://opentelemetry.io/docs/specs/opamp/) server and management UI for OpenTelemetry Contrib Collectors. Operators can see which collectors are connected, inspect their health, and safely push config changes — all from a browser.
 
