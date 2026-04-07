@@ -19,7 +19,7 @@ export function PushStatusBadge({ pushState }: PushStatusBadgeProps) {
     },
     APPLYING: {
       label: 'Applying...',
-      colorClass: 'border-blue-700 bg-blue-950 text-blue-300',
+      colorClass: 'border-[#1e2d6b] bg-[#162050] text-[#7b93e8]',
       pulsing: true,
     },
     APPLIED: {

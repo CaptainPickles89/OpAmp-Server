@@ -4,6 +4,7 @@ import { EditorView, lineNumbers, highlightActiveLineGutter, keymap } from '@cod
 import { yaml } from '@codemirror/lang-yaml'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { indentWithTab } from '@codemirror/commands'
+import { useTheme } from '@/hooks/useTheme'
 
 interface ConfigEditorProps {
   value: string
@@ -11,9 +12,9 @@ interface ConfigEditorProps {
   readOnly?: boolean
 }
 
-const editorTheme = EditorView.theme({
+const darkEditorTheme = EditorView.theme({
   '&': {
-    backgroundColor: '#0E1223',
+    backgroundColor: '#0a1025',
     fontFamily: 'ui-monospace, Consolas, "Courier New", monospace',
     minHeight: '300px',
   },
@@ -22,17 +23,51 @@ const editorTheme = EditorView.theme({
   },
 })
 
+const lightEditorTheme = EditorView.theme({
+  '&': {
+    backgroundColor: '#f8faff',
+    color: '#1e2642',
+    fontFamily: 'ui-monospace, Consolas, "Courier New", monospace',
+    minHeight: '300px',
+  },
+  '.cm-scroller': {
+    fontFamily: 'ui-monospace, Consolas, "Courier New", monospace',
+  },
+  '.cm-gutters': {
+    backgroundColor: '#f0f3fd',
+    borderRight: '1px solid #dde3f0',
+    color: '#8892b0',
+  },
+  '.cm-activeLineGutter': {
+    backgroundColor: '#e8edfb',
+  },
+  '.cm-activeLine': {
+    backgroundColor: 'rgba(66, 92, 199, 0.04)',
+  },
+  '.cm-selectionBackground, ::selection': {
+    backgroundColor: '#b8c5e8 !important',
+  },
+  '.cm-cursor': {
+    borderLeftColor: '#425CC7',
+  },
+})
+
 export function ConfigEditor({ value, onChange, readOnly = false }: ConfigEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const { theme } = useTheme()
 
   useEffect(() => {
     if (!containerRef.current) return
 
+    const themeExtensions =
+      theme === 'dark'
+        ? [oneDark, darkEditorTheme]
+        : [lightEditorTheme]
+
     const extensions = [
       yaml(),
-      oneDark,
-      editorTheme,
+      ...themeExtensions,
       lineNumbers(),
       highlightActiveLineGutter(),
       keymap.of([indentWithTab]),
@@ -65,9 +100,9 @@ export function ConfigEditor({ value, onChange, readOnly = false }: ConfigEditor
       view.destroy()
       viewRef.current = null
     }
-    // Only create editor once on mount — value updates handled separately
+    // Recreate editor when readOnly or theme changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [readOnly])
+  }, [readOnly, theme])
 
   // Update editor content when value prop changes (without re-creating the editor)
   useEffect(() => {
@@ -84,7 +119,7 @@ export function ConfigEditor({ value, onChange, readOnly = false }: ConfigEditor
   return (
     <div
       ref={containerRef}
-      className="min-h-[300px] rounded-md border border-slate-700 overflow-hidden font-mono"
+      className="min-h-[300px] rounded-md border border-border overflow-hidden font-mono"
       data-testid="config-editor"
       aria-label="YAML configuration editor"
       aria-readonly={readOnly}

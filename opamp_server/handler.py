@@ -94,7 +94,8 @@ async def opamp_handler(request: Request) -> Response:
     # Sequence gap detection
     stored_seq = existing.sequence_num if existing else None
     gap_detected = detect_sequence_gap(msg.sequence_num, stored_seq)
-    flags = FLAG_REPORT_FULL_STATE if gap_detected else 0
+    missing_config = not (existing and existing.has_effective_config)
+    flags = FLAG_REPORT_FULL_STATE if (gap_detected or missing_config) else 0
 
     if gap_detected:
         log.info(
@@ -118,6 +119,7 @@ async def opamp_handler(request: Request) -> Response:
         pending_config_hash=existing.pending_config_hash if existing else None,
         pending_config_body=existing.pending_config_body if existing else None,
         is_rollback_push=existing.is_rollback_push if existing else False,
+        has_effective_config=(existing.has_effective_config if existing else False) or msg.HasField("effective_config"),
     )
 
     # Update in-memory registry (synchronous within event loop)
@@ -143,11 +145,15 @@ async def opamp_handler(request: Request) -> Response:
     if msg.HasField("effective_config"):
         cfg_bytes = msg.effective_config.SerializeToString()
         cfg_hash = hashlib.sha256(cfg_bytes).hexdigest()[:16]
+        config_data = {
+            key: {"body": file.body.decode("utf-8", errors="replace"), "content_type": file.content_type}
+            for key, file in msg.effective_config.config_map.config_map.items()
+        }
         asyncio.ensure_future(
             persistence.store_effective_config(
                 instance_uid=agent_uid,
                 config_hash=cfg_hash,
-                config_data={},  # simplified — store hash only for Phase 1
+                config_data=config_data,
             )
         )
 

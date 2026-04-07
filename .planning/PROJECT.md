@@ -56,22 +56,25 @@ Operators can see which collectors are connected, understand their health, and s
 - ✓ Config editor pre-seed: seededRef guard seeds CodeMirror with effective_config on first data arrival, poll-safe — v1.1 (Phase 6)
 - ✓ Getting Started BASE_CONFIG_YAML enriched with host.name, service.instance.id, deployment.environment, host.ip — v1.1 (Phase 6)
 - ✓ compose.yaml collector service pinned to otel/opentelemetry-collector-contrib:0.119.0 — v1.1 (Phase 6)
+- ✓ Status landing page at `/`: OTel hero gradient, live "X of Y agents healthy" count (5s poll), Status nav item — v1.1 (Phase 7)
+- ✓ GET /api/v1/stats endpoint: total and healthy agent counts — v1.1 (Phase 7)
+- ✓ Stale collector TTL purge: background asyncio task, OPAMP_COLLECTOR_TTL_HOURS env var (default 24), push-state guard — v1.1 (Phase 8)
+- ✓ registry.remove() and persistence.purge_agent() with ordered child-table deletes — v1.1 (Phase 8)
+- ✓ Dynamic resource attribute columns: agent_description parsed and stored per collector in agent_resource_attrs table — v1.1 (Phase 9)
+- ✓ GET /api/v1/collectors returns resource_attributes dict per collector (additive, backward-compatible) — v1.1 (Phase 9)
+- ✓ GET /api/v1/collectors/attrs/keys returns union of all discovered attribute keys — v1.1 (Phase 9)
+- ✓ Column picker with localStorage persistence; host.name visible by default; new keys auto-appear on next poll — v1.1 (Phase 9)
 
-## Current Milestone: v1.1 Operator UX
+## Current State: v1.1 Shipped
 
-**Goal:** Improve day-to-day usability — eliminate stale ghost agents, surface readable collector metadata, pre-populate the config editor, and give the app a proper landing page.
+v1.1 Operator UX shipped 2026-04-07. All 23 requirements delivered across 4 phases (Phases 6-9).
 
-**Target features:**
-- Stale collector TTL purge: auto-delete agents unseen for >24h (`OPAMP_COLLECTOR_TTL_HOURS` env var, default 24)
-- Config editor pre-populate: seed CodeMirror with `effective_config` on collector detail page load
-- Capabilities as chips: replace bitmask with human-readable labelled chips in the collector table
-- Enriched example config: add `include_resource_attributes` + `host.name`, `service.instance.id`, `deployment.environment`, `host.ip`; pin collector image version in `compose.yaml`
-- Dynamic resource attribute columns: collector list shows `host.name` column by default; column picker dynamically discovers all resource attribute keys seen across connected collectors and lets operators toggle them on/off; new keys auto-appear in the picker
-- Status landing page: new "Status" nav item with OTel logo hero + gradient, brief UI description, count of currently healthy agents
-
-### Active
-
-Phase 6 complete — capability chips, config editor pre-seed, enriched YAML, and compose.yaml image pin all delivered.
+**What shipped:**
+- Capability chips replacing raw OpAMP bitmask integers
+- Config editor pre-seeded from effective_config on page load
+- Status landing page at `/` with live healthy-agent count
+- Stale collector TTL purge (background asyncio, configurable, push-state guard)
+- Dynamic resource attribute columns with column picker and localStorage persistence
 
 ### Out of Scope
 
@@ -84,7 +87,7 @@ Phase 6 complete — capability chips, config editor pre-seed, enriched YAML, an
 
 ## Context
 
-**Current state (v1.0):** Fully functional OpAMP server and management UI. 91 files, ~13,100 lines of code. Stack: Python 3.11 / FastAPI / SQLite / aiosqlite / structlog / slowapi; React 19 / Vite 8 / TypeScript / Tailwind v4 / shadcn/ui / CodeMirror; nginx Docker image for UI serving. Full TDD — all phases started with failing stubs before implementation.
+**Current state (v1.1):** Fully functional OpAMP server and management UI with enhanced operator UX. ~7,100 lines of code (py + ts + tsx). Stack: Python 3.11 / FastAPI / SQLite / aiosqlite / structlog / slowapi; React 19 / Vite 8 / TypeScript / Tailwind v4 / shadcn/ui / CodeMirror; nginx Docker image for UI serving. Full TDD — all phases started with failing stubs before implementation.
 
 **Companion collector:** `collector/` contains an OTel Contrib Collector (0.119.0) Dockerfile and `config.yaml` (standalone) + `config.compose.yaml` (Compose-aware with DNS name `api:8000`) pre-configured to connect to the server via HTTP polling every 5 seconds.
 
@@ -93,8 +96,7 @@ Phase 6 complete — capability chips, config editor pre-seed, enriched YAML, an
 **Scale target:** 100+ concurrent collectors. SQLite with WAL mode and connection pooling is adequate for this range.
 
 **Known tech debt:**
-- Config editor does not pre-populate with current effective_config on page load (API returns it; UI just doesn't seed the editor)
-- compose.yaml collector service uses `latest` tag rather than pinned version
+- One pre-existing test failure in `tests/test_config_push.py::test_failed_triggers_rollback` (confirmed pre-existing, unrelated to v1.1 changes; deferred)
 
 ## Constraints
 
@@ -118,6 +120,11 @@ Phase 6 complete — capability chips, config editor pre-seed, enriched YAML, an
 | Use ui-ux-pro skill for all UI phases | Ensures consistent, high-quality visual design; Roboto font alignment | ✓ Good — UI component quality and visual consistency were high |
 | TDD for all phases (failing stubs first) | Catches regressions early; forces interface design before implementation | ✓ Good — all phases used wave-0 stubs pattern |
 | capabilities=0x07 (AcceptsRemoteConfig added in Phase 2) | Phase 1 used 0x05; Phase 2 added AcceptsRemoteConfig capability bit correctly | ✓ Good — backward-compatible upgrade |
+| seededRef guard for config editor pre-seed | One-shot useEffect guard prevents background poll from overwriting in-progress edits | ✓ Good — handleEditStart fallback retained for re-entry into edit mode |
+| asyncio.Task stored in app.state.purge_task | Prevents GC of unawaited background tasks; app.state is canonical FastAPI per-app store | ✓ Good — getattr guard covers partial startup failures |
+| Ordered child-table deletes for purge (no FK cascade) | SQLite FK cascade is OFF by default; explicit delete order prevents constraint violations | ✓ Good — agent_resource_attrs added to delete order in Phase 9 |
+| attrs/keys route registered before /{id} route | FastAPI path matching is first-match; /attrs/keys would be shadowed by /{id} if registered second | ✓ Good — route ordering documented as critical pattern |
+| Node.js 22+ globalThis.localStorage shim in setupTests | Built-in localStorage in Node 22 shadows jsdom's Storage, breaking vitest | ✓ Good — fixed by pointing globalThis.localStorage at window._localStorage |
 
 ## Evolution
 
@@ -137,4 +144,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-30 — milestone v1.1 Operator UX started*
+*Last updated: 2026-04-07 — after v1.1 Operator UX milestone*

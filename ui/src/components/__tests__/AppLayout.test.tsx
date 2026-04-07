@@ -23,7 +23,6 @@ describe('AppLayout', () => {
 
   it('Status link is first nav item', () => {
     renderAppLayout()
-    const navLinks = screen.getAllByRole('link')
     // First link is brand link (to="/"), second is the first nav pill item
     // Find all nav pill links by their text
     const statusLink = screen.getByRole('link', { name: 'Status' })

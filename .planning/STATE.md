@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Operator UX
-status: executing
-stopped_at: Completed 09-04-PLAN.md (Task 1) — stopped at human-verify checkpoint Task 2
-last_updated: "2026-03-30T16:03:56.361Z"
+status: complete
+stopped_at: v1.1 milestone archived 2026-04-07
+last_updated: "2026-04-07T09:11:37.004Z"
 progress:
   total_phases: 4
   completed_phases: 4
@@ -16,10 +16,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-30)
+See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** Operators can see which collectors are connected, understand their health, and safely push config changes — all from a browser.
-**Current focus:** Phase 08 — stale-collector-ttl-purge
+**Current focus:** Planning next milestone (v1.2)
 
 ## Current Position
 

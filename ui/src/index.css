@@ -2,9 +2,31 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #020617;
-  --color-card: #0E1223;
-  --color-surface: #0F172A;
+  /* Surfaces — dark defaults, overridden by [data-theme="light"] */
+  --color-background: #050a18;
+  --color-card: #0a1025;
+  --color-header: #080e20;
+  --color-nav-pill: rgba(15, 20, 40, 0.65);
+  --color-skeleton: rgba(255, 255, 255, 0.08);
+  --color-hover: rgba(255, 255, 255, 0.05);
+
+  /* Borders */
+  --color-border: #1a2340;
+  --color-border-accent: #1e2d6b;
+
+  /* Text */
+  --color-foreground: #e2e8f0;
+  --color-foreground-secondary: #cbd5e1;
+  --color-foreground-muted: #94a3b8;
+  --color-foreground-subtle: #64748b;
+
+  /* OTel brand */
+  --color-otel-blue: #425CC7;
+  --color-otel-blue-hover: #3650b5;
+  --color-otel-blue-subtle: #162050;
+  --color-otel-amber: #F5A800;
+  --color-otel-amber-muted: #7a5200;
+  --color-otel-amber-subtle: #3d2a00;
 
   /* Status colors */
   --color-healthy: #4ade80;
@@ -14,7 +36,7 @@
 
   /* Push state colors */
   --color-push-pending: #fbbf24;
-  --color-push-applying: #60a5fa;
+  --color-push-applying: #425CC7;
   --color-push-applied: #4ade80;
   --color-push-failed: #f87171;
 
@@ -22,12 +44,53 @@
   --font-mono: ui-monospace, Consolas, 'Courier New', monospace;
 }
 
+/* ─── Light theme overrides ─────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --color-background: #f4f7ff;
+  --color-card: #ffffff;
+  --color-header: #ffffff;
+  --color-nav-pill: rgba(232, 237, 255, 0.85);
+  --color-skeleton: rgba(66, 92, 199, 0.07);
+  --color-hover: rgba(66, 92, 199, 0.05);
+  --color-border: #dde3f0;
+  --color-border-accent: #b8c5e8;
+  --color-foreground: #1e2642;
+  --color-foreground-secondary: #374165;
+  --color-foreground-muted: #6b7599;
+  --color-foreground-subtle: #8892b0;
+  --color-otel-blue-subtle: #edf0fd;
+  --color-otel-amber-muted: #b37d00;
+  --color-otel-amber-subtle: #fff8e6;
+}
+
+/* Light mode: alert/callout colour inversions */
+[data-theme="light"] .bg-amber-950 { background-color: #fffbeb; }
+[data-theme="light"] .border-amber-700 { border-color: #d97706; }
+[data-theme="light"] .text-amber-300 { color: #92400e; }
+
+[data-theme="light"] .bg-red-950 { background-color: #fef2f2; }
+[data-theme="light"] .border-red-800 { border-color: #ef4444; }
+[data-theme="light"] .text-red-400 { color: #dc2626; }
+
+[data-theme="light"] .bg-green-950 { background-color: #f0fdf4; }
+[data-theme="light"] .border-green-800 { border-color: #22c55e; }
+[data-theme="light"] .text-green-400 { color: #15803d; }
+
+/* Light mode: HealthBadge dot colours stay semantic — no override needed */
+
+/* Light mode: subtle header elevation instead of border */
+[data-theme="light"] header {
+  box-shadow: 0 1px 16px rgba(66, 92, 199, 0.08);
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────────── */
 html, body {
-  background-color: #020617;
-  color: #e2e8f0;
+  background-color: var(--color-background, #050a18);
+  color: var(--color-foreground, #e2e8f0);
   font-family: 'Roboto', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root {

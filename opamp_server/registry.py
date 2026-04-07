@@ -25,6 +25,8 @@ class AgentRecord:
     # Raw YAML string of the pending config
     is_rollback_push: bool = field(default=False)
     # True if the current pending push is a server-initiated rollback
+    has_effective_config: bool = field(default=False)
+    # True once the server has received and stored an effective_config from this agent
 
 
 class AgentRegistry:
@@ -129,5 +131,6 @@ class AgentRegistry:
                 pending_config_hash=pending_config_hash,
                 pending_config_body=pending_config_body,
                 is_rollback_push=is_rollback_push,
+                has_effective_config=existing.has_effective_config,
             )
             self._agents[uid] = updated

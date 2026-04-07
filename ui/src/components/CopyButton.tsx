@@ -28,7 +28,10 @@ export function CopyButton({ text, label = 'Copy', className }: CopyButtonProps)
       <button
         disabled
         title="Copy unavailable"
-        className={cn('inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-sm opacity-50 cursor-not-allowed', className)}
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm opacity-50 cursor-not-allowed border border-border-accent bg-otel-blue-subtle text-foreground-muted',
+          className,
+        )}
         aria-label="Copy unavailable"
       >
         <Clipboard className="h-3.5 w-3.5" aria-hidden="true" />
@@ -41,10 +44,10 @@ export function CopyButton({ text, label = 'Copy', className }: CopyButtonProps)
     <button
       onClick={() => void handleCopy()}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-sm transition-colors',
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm transition-colors',
         copied
-          ? 'bg-green-900 text-green-300'
-          : 'bg-slate-700 text-slate-200 hover:bg-slate-600',
+          ? 'bg-green-900/60 border border-green-800 text-green-300'
+          : 'bg-otel-blue-subtle border border-border-accent text-foreground-secondary hover:bg-border-accent hover:text-foreground',
         className,
       )}
       aria-label={copied ? 'Copied!' : 'Copy to clipboard'}
