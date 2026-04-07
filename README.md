@@ -71,6 +71,8 @@ npm run build
 |--------|------|-------------|
 | `GET` | `/api/v1/collectors` | List all connected collectors |
 | `GET` | `/api/v1/collectors/{id}` | Detail for a single collector (health, config, push status) |
+| `GET` | `/api/v1/collectors/attrs/keys` | List all known resource attribute keys (for dynamic columns) |
+| `GET` | `/api/v1/stats` | Fleet health summary: healthy and total collector counts |
 | `POST` | `/api/v1/collectors/{id}/config` | Push a new YAML config to a collector |
 | `POST` | `/v1/opamp` | OpAMP binary protobuf endpoint (used by collectors) |
 
