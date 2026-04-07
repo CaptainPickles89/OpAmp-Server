@@ -24,6 +24,7 @@ const mockCollectorDetail: CollectorDetail = {
   last_seen: Date.now() * 1_000_000,
   health_status: 'healthy',
   capabilities: 19463,
+  resource_attributes: { 'host.name': 'web-01', 'os.type': 'linux' },
   health_history: [
     {
       recorded_at: Date.now() * 1_000_000,

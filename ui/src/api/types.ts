@@ -41,6 +41,7 @@ export const CollectorDetailSchema = z.object({
   last_seen: z.number(),
   health_status: HealthStatusSchema,
   capabilities: z.number(),
+  resource_attributes: z.record(z.string(), z.string()).default({}),
   health_history: z.array(HealthSnapshotSchema),
   effective_config: EffectiveConfigSchema.nullable(),
   push_status: PushStatusSchema,

@@ -24,6 +24,7 @@ extensions:
         "description": "A description here..."
         "foo": "bar"
         "agent.name": "Sample Collector"
+        "host.name": "dev-collector-01"
     capabilities:
       reports_effective_config: true
       reports_health: true

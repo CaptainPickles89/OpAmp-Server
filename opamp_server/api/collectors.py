@@ -54,6 +54,7 @@ class CollectorDetail(BaseModel):
     last_seen: int
     health_status: str
     capabilities: int
+    resource_attributes: dict[str, str] = {}
     health_history: list[HealthSnapshot]
     effective_config: Optional[EffectiveConfig] = None
     push_status: PushStatus
@@ -173,6 +174,7 @@ async def get_collector(collector_id: str, request: Request) -> JSONResponse:
 
     # Fetch health data (newest-first, limit 10)
     health_rows = await persistence.get_health_history(agent_uid, limit=10)
+    resource_attrs_map = await persistence.get_resource_attrs_for_agents([uid_hex])
     health_status = _derive_health_status(health_rows[0] if health_rows else None)
 
     # Fetch most recent effective config
@@ -203,6 +205,7 @@ async def get_collector(collector_id: str, request: Request) -> JSONResponse:
         "last_seen": agent.last_seen,
         "health_status": health_status,
         "capabilities": agent.capabilities,
+        "resource_attributes": resource_attrs_map.get(uid_hex, {}),
         "health_history": health_rows,
         "effective_config": effective_config,
         "push_status": push_status,

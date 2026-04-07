@@ -72,6 +72,7 @@ export function ConfigEditor({ value, onChange, readOnly = false }: ConfigEditor
       highlightActiveLineGutter(),
       keymap.of([indentWithTab]),
       EditorState.readOnly.of(readOnly),
+      EditorView.lineWrapping,
     ]
 
     if (onChange && !readOnly) {

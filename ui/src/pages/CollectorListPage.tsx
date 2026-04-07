@@ -191,7 +191,7 @@ export function CollectorListPage() {
                 <RelativeTime nanoseconds={collector.last_seen} />
               </span>
               <span className="flex justify-center">
-                <CapabilityChipList capabilities={collector.capabilities} />
+                <CapabilityChipList capabilities={collector.capabilities} showDescriptions={false} />
               </span>
               {enabledKeys.map(key => (
                 <span key={key} className="text-sm text-center truncate">

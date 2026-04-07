@@ -76,6 +76,11 @@
 [data-theme="light"] .border-green-800 { border-color: #22c55e; }
 [data-theme="light"] .text-green-400 { color: #15803d; }
 
+/* Light mode: CapabilityChip named variant */
+[data-theme="light"] .bg-\[#162050\] { background-color: #edf0fd; }
+[data-theme="light"] .border-\[#1e2d6b\] { border-color: #b8c5e8; }
+[data-theme="light"] .text-\[#7b93e8\] { color: #2d4a9e; }
+
 /* Light mode: HealthBadge dot colours stay semantic — no override needed */
 
 /* Light mode: subtle header elevation instead of border */

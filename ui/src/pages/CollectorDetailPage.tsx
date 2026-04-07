@@ -12,15 +12,15 @@ import { ApiError } from '@/api/client'
 
 function HealthSnapshotRow({ snapshot }: { snapshot: HealthSnapshot }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-border last:border-b-0 text-sm">
-      <span className="text-foreground-muted">
+    <div className="flex items-start justify-between py-2 border-b border-border last:border-b-0 text-sm gap-2">
+      <span className="text-foreground-muted shrink-0">
         <RelativeTime nanoseconds={snapshot.recorded_at} />
       </span>
-      <span className={snapshot.healthy ? 'text-green-400' : 'text-red-400'}>
+      <span className={`shrink-0 font-medium ${snapshot.healthy ? 'text-green-400' : 'text-red-400'}`}>
         {snapshot.healthy ? 'Healthy' : 'Unhealthy'}
       </span>
       {snapshot.last_error && (
-        <span className="text-red-400 text-xs truncate max-w-[200px]" title={snapshot.last_error}>
+        <span className="text-red-400 text-xs break-words min-w-0" title={snapshot.last_error}>
           {snapshot.last_error}
         </span>
       )}
@@ -30,15 +30,31 @@ function HealthSnapshotRow({ snapshot }: { snapshot: HealthSnapshot }) {
 
 function DetailSkeleton() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" aria-label="Loading collector details">
-      {[0, 1].map(i => (
-        <div key={i} className="rounded-lg border border-border p-4 space-y-3">
+    <div className="space-y-4" aria-label="Loading collector details">
+      {/* Health overview skeleton */}
+      <div className="rounded-lg border border-border p-4 space-y-3">
+        <div className="h-5 w-32 animate-pulse rounded bg-skeleton" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="space-y-1">
+              <div className="h-3 w-20 animate-pulse rounded bg-skeleton" />
+              <div className="h-4 w-28 animate-pulse rounded bg-skeleton" />
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Config + history skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 rounded-lg border border-border p-4 space-y-3">
+          <div className="h-5 w-40 animate-pulse rounded bg-skeleton" />
+          <div className="h-64 animate-pulse rounded bg-skeleton" />
+        </div>
+        <div className="rounded-lg border border-border p-4 space-y-3">
           <div className="h-5 w-32 animate-pulse rounded bg-skeleton" />
           <div className="h-4 w-full animate-pulse rounded bg-skeleton" />
           <div className="h-4 w-3/4 animate-pulse rounded bg-skeleton" />
-          <div className="h-64 animate-pulse rounded bg-skeleton" />
         </div>
-      ))}
+      </div>
     </div>
   )
 }
@@ -139,49 +155,38 @@ export function CollectorDetailPage() {
         <span aria-hidden="true">←</span> Collectors
       </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Health Panel */}
-        <div className="rounded-lg border border-border bg-card p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">Health</h2>
-            <HealthBadge status={collector.health_status} size="md" />
-          </div>
-
-          <dl className="space-y-2 text-sm">
-            <div className="flex flex-col">
-              <dt className="text-foreground-muted">Instance UID</dt>
-              <dd className="font-mono text-foreground-secondary break-all">{collector.instance_uid}</dd>
-            </div>
-            <div className="flex flex-col">
-              <dt className="text-foreground-muted">First Seen</dt>
-              <dd className="text-foreground-secondary"><RelativeTime nanoseconds={collector.first_seen} /></dd>
-            </div>
-            <div className="flex flex-col">
-              <dt className="text-foreground-muted">Last Seen</dt>
-              <dd className="text-foreground-secondary"><RelativeTime nanoseconds={collector.last_seen} /></dd>
-            </div>
-            <div className="flex flex-col">
-              <dt className="text-foreground-muted">Capabilities</dt>
-              <dd><CapabilityChipList capabilities={collector.capabilities} /></dd>
-            </div>
-          </dl>
-
-          {collector.health_history.length > 0 && (
-            <div>
-              <h3 className="text-xs font-medium text-foreground-subtle uppercase tracking-wider mb-2">Health History</h3>
-              <div className="rounded border border-border">
-                {collector.health_history.map(snapshot => (
-                  <HealthSnapshotRow key={snapshot.recorded_at} snapshot={snapshot} />
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Section 1: Health Overview — full-width banner */}
+      <section aria-labelledby="health-overview-heading" className="rounded-lg border border-border bg-card p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 id="health-overview-heading" className="text-lg font-semibold text-foreground">
+            Health &mdash; {collector.instance_uid}
+          </h2>
+          <HealthBadge status={collector.health_status} size="md" />
         </div>
 
-        {/* Right: Config Panel */}
-        <div className="rounded-lg border border-border bg-card p-4 space-y-4">
+        <dl className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+          <div className="flex flex-col">
+            <dt className="text-foreground-muted text-xs uppercase tracking-wider mb-0.5">First Seen</dt>
+            <dd className="text-foreground-secondary"><RelativeTime nanoseconds={collector.first_seen} /></dd>
+          </div>
+          <div className="flex flex-col">
+            <dt className="text-foreground-muted text-xs uppercase tracking-wider mb-0.5">Last Seen</dt>
+            <dd className="text-foreground-secondary"><RelativeTime nanoseconds={collector.last_seen} /></dd>
+          </div>
+          <div className="flex flex-col">
+            <dt className="text-foreground-muted text-xs uppercase tracking-wider mb-0.5">Hostname</dt>
+            <dd className="text-foreground-secondary">{collector.resource_attributes['host.name'] ?? '-'}</dd>
+          </div>
+        </dl>
+      </section>
+
+      {/* Sections 2+3: Config (2/3) and Health History (1/3) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Section 2: Current Config — left 2/3 */}
+        <section aria-labelledby="config-heading" className="lg:col-span-2 rounded-lg border border-border bg-card p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">Effective Config</h2>
+            <h2 id="config-heading" className="text-lg font-semibold text-foreground">Effective Config</h2>
             <PushStatusBadge pushState={collector.push_status.push_state} />
           </div>
 
@@ -254,7 +259,33 @@ export function CollectorDetailPage() {
               </button>
             </div>
           )}
-        </div>
+        </section>
+
+        {/* Sections 3+4: right 1/3 column stacked */}
+        <div className="flex flex-col gap-6">
+
+        {/* Section 3: Capabilities */}
+        <section aria-labelledby="capabilities-heading" className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <h2 id="capabilities-heading" className="text-base font-semibold text-foreground">Capabilities</h2>
+          <CapabilityChipList capabilities={collector.capabilities} />
+        </section>
+
+        {/* Section 4: Health History */}
+        <section aria-labelledby="health-history-heading" className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <h2 id="health-history-heading" className="text-base font-semibold text-foreground">Health History</h2>
+
+          {collector.health_history.length === 0 ? (
+            <p className="text-foreground-subtle text-sm italic">No history recorded yet.</p>
+          ) : (
+            <div className="rounded border border-border divide-y divide-border overflow-hidden">
+              {collector.health_history.map(snapshot => (
+                <HealthSnapshotRow key={snapshot.recorded_at} snapshot={snapshot} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        </div>{/* end right column */}
       </div>
     </div>
   )
