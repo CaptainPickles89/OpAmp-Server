@@ -143,6 +143,100 @@ class TestErrorResponses:
 
 
 # ---------------------------------------------------------------------------
+# Effective config storage (handler → persistence.store_effective_config)
+# ---------------------------------------------------------------------------
+
+
+class TestEffectiveConfigStorage:
+    async def test_handler_stores_effective_config(self, async_client):
+        """Handler persists effective_config body to effective_configs table."""
+        import json
+        import aiosqlite
+
+        agent_uid = b"\xcc" * 16
+        config_yaml = "receivers:\n  otlp: {}\nservice:\n  pipelines: {}\n"
+
+        msg = opamp.AgentToServer()
+        msg.instance_uid = agent_uid
+        msg.sequence_num = 1
+        msg.capabilities = 0x805
+        cfg_file = msg.effective_config.config_map.config_map["collector.yaml"]
+        cfg_file.body = config_yaml.encode()
+        cfg_file.content_type = "text/yaml"
+
+        response = await async_client.post(
+            OPAMP_URL, content=msg.SerializeToString(), headers=HEADERS
+        )
+        assert response.status_code == 200
+
+        # Wait for fire-and-forget store to complete
+        pending = [
+            t for t in asyncio.all_tasks()
+            if t is not asyncio.current_task()
+            and "store_effective_config" in str(t.get_coro())
+        ]
+        if pending:
+            await asyncio.wait(pending, timeout=1.0)
+
+        db_path = async_client.app.state.db_path  # type: ignore[attr-defined]
+        async with aiosqlite.connect(db_path) as db:
+            async with db.execute(
+                "SELECT config_json FROM effective_configs WHERE instance_uid = ?",
+                (agent_uid.hex(),),
+            ) as cursor:
+                row = await cursor.fetchone()
+
+        assert row is not None, "effective_configs row must be written"
+        stored = json.loads(row[0])
+        assert "collector.yaml" in stored
+        assert stored["collector.yaml"]["body"] == config_yaml
+        assert stored["collector.yaml"]["content_type"] == "text/yaml"
+
+    async def test_handler_stores_effective_config_with_arbitrary_key(self, async_client):
+        """Handler stores whatever key the agent uses — not just 'collector.yaml'."""
+        import json
+        import aiosqlite
+
+        agent_uid = b"\xdd" * 16
+        config_yaml = "exporters:\n  debug: {}\n"
+
+        msg = opamp.AgentToServer()
+        msg.instance_uid = agent_uid
+        msg.sequence_num = 1
+        msg.capabilities = 0x805
+        # OTel Collector sends its locally-loaded config under its own key (e.g. "")
+        cfg_file = msg.effective_config.config_map.config_map[""]
+        cfg_file.body = config_yaml.encode()
+        cfg_file.content_type = "text/yaml"
+
+        response = await async_client.post(
+            OPAMP_URL, content=msg.SerializeToString(), headers=HEADERS
+        )
+        assert response.status_code == 200
+
+        pending = [
+            t for t in asyncio.all_tasks()
+            if t is not asyncio.current_task()
+            and "store_effective_config" in str(t.get_coro())
+        ]
+        if pending:
+            await asyncio.wait(pending, timeout=1.0)
+
+        db_path = async_client.app.state.db_path  # type: ignore[attr-defined]
+        async with aiosqlite.connect(db_path) as db:
+            async with db.execute(
+                "SELECT config_json FROM effective_configs WHERE instance_uid = ?",
+                (agent_uid.hex(),),
+            ) as cursor:
+                row = await cursor.fetchone()
+
+        assert row is not None
+        stored = json.loads(row[0])
+        assert "" in stored
+        assert stored[""]["body"] == config_yaml
+
+
+# ---------------------------------------------------------------------------
 # Phase 9 stubs — handler extracts non_identifying_attributes (COLS-01)
 # ---------------------------------------------------------------------------
 

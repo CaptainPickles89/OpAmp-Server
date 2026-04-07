@@ -73,6 +73,9 @@ export type ResourceAttrKeys = z.infer<typeof ResourceAttrKeysSchema>
 
 export function extractYaml(config: EffectiveConfig | null): string {
   if (!config) return ''
-  const entry = config.config_json['collector.yaml']
+  // Prefer the canonical push key; fall back to the first available entry.
+  // On first connection the OTel Collector reports its locally-loaded config
+  // under a different key (e.g. "" or the file path) before any push has occurred.
+  const entry = config.config_json['collector.yaml'] ?? Object.values(config.config_json)[0]
   return entry?.body ?? ''
 }

@@ -94,8 +94,7 @@ async def opamp_handler(request: Request) -> Response:
     # Sequence gap detection
     stored_seq = existing.sequence_num if existing else None
     gap_detected = detect_sequence_gap(msg.sequence_num, stored_seq)
-    missing_config = not (existing and existing.has_effective_config)
-    flags = FLAG_REPORT_FULL_STATE if (gap_detected or missing_config) else 0
+    flags = FLAG_REPORT_FULL_STATE if gap_detected else 0
 
     if gap_detected:
         log.info(
@@ -149,12 +148,23 @@ async def opamp_handler(request: Request) -> Response:
             key: {"body": file.body.decode("utf-8", errors="replace"), "content_type": file.content_type}
             for key, file in msg.effective_config.config_map.config_map.items()
         }
-        asyncio.ensure_future(
+        log.info(
+            "effective_config_received",
+            instance_uid=uid_hex,
+            config_hash=cfg_hash,
+            config_keys=list(config_data.keys()),
+        )
+        task = asyncio.ensure_future(
             persistence.store_effective_config(
                 instance_uid=agent_uid,
                 config_hash=cfg_hash,
                 config_data=config_data,
             )
+        )
+        task.add_done_callback(
+            lambda t: log.error("store_effective_config_failed", error=str(t.exception()), instance_uid=uid_hex)
+            if not t.cancelled() and t.exception()
+            else None
         )
 
     # Store resource attributes from AgentDescription (COLS-01)
